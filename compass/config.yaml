@@ -1,0 +1,6 @@
+# Read by the Compass orchestrator before it opens a pull request on this repo.
+stack: nextjs-ts
+checks:
+  - npm ci
+  - npm run lint
+  - npm run build
