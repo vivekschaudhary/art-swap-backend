@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval-boundary:
+    name: Evals and src changed in separate PRs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject PRs that touch both src/ and evals/
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          src=$(echo "$changed" | grep -c '^src/' || true)
+          evals=$(echo "$changed" | grep -c '^evals/' || true)
+          if [ "$src" -gt 0 ] && [ "$evals" -gt 0 ]; then
+            echo "This PR changes both src/ and evals/. Split it: evals changes go in their own PR (docs/v1-design.md §16)."
+            exit 1
+          fi
+
+  api:
+    name: API typecheck, unit tests, spec freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: OpenAPI document is committed and up to date
+        run: |
+          npm run openapi:export
+          git diff --exit-code openapi/openapi.json
+
+  evals-static:
+    name: Evals E1 and E2 (no running API)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: evals/package-lock.json
+      - run: npm ci
+        working-directory: evals
+      - run: npm run typecheck
+        working-directory: evals
+      - run: npm run static:selftest
+        working-directory: evals
+      - run: npm run static
+        working-directory: evals
+      - run: npm run contract:lint
+        working-directory: evals
+      - run: npx vitest run contract
+        working-directory: evals
+
+  evals-scenarios:
+    name: Evals E3 and E4 (full stack)
+    runs-on: ubuntu-latest
+    needs: [api, evals-static]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start stack
+        run: docker compose up -d --build --wait
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: evals/package-lock.json
+      - run: npm ci
+        working-directory: evals
+      - run: npm run scenarios
+        working-directory: evals
+      - name: Dump API logs on failure
+        if: failure()
+        run: docker compose logs api worker
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

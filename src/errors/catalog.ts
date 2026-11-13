@@ -1,0 +1,33 @@
+// Source of truth: docs/v1-design.md §10.2. Keep in sync; evals/contract/catalog-sync.test.ts enforces it.
+export const ERROR_CATALOG = {
+  VALIDATION_FAILED: 400,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  ACCOUNT_SUSPENDED: 403,
+  ONBOARDING_REQUIRED: 403,
+  NOT_FOUND: 404,
+  VERSION_CONFLICT: 412,
+  IDEMPOTENCY_KEY_REUSED: 409,
+  ITEM_LOCKED: 409,
+  ITEM_NOT_PUBLISHABLE: 422,
+  DRAFT_LIMIT_REACHED: 422,
+  MEDIA_LIMIT_EXCEEDED: 422,
+  MEDIA_INVALID: 422,
+  SWAP_ITEM_UNAVAILABLE: 409,
+  SWAP_OWN_ITEM: 422,
+  SWAP_DUPLICATE: 409,
+  SWAP_INVALID_TRANSITION: 409,
+  SWAP_EXPIRED: 409,
+  FULFILLMENT_NOT_SUPPORTED: 422,
+  USER_BLOCKED: 403,
+  CONVERSATION_CLOSED: 409,
+  RATE_LIMITED: 429,
+  INTERNAL: 500,
+  DEPENDENCY_UNAVAILABLE: 503,
+} as const;
+
+export type ErrorCode = keyof typeof ERROR_CATALOG;
+
+export const PROBLEM_TYPE_BASE = "https://api.kindtree.us/errors/";
+
+export const problemType = (code: ErrorCode): string => PROBLEM_TYPE_BASE + code.toLowerCase().replace(/_/g, "-");

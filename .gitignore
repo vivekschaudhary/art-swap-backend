@@ -42,3 +42,6 @@ next-env.d.ts
 
 # evals
 evals/node_modules
+
+# build output
+/dist
