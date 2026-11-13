@@ -28,7 +28,8 @@ services:
     # Host port 55432 avoids clashing with a locally installed Postgres on 5432.
     ports: ["55432:5432"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d kindtree"]
+      # TCP check: the image's init phase accepts Unix-socket connections before the real server listens on TCP.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U postgres -d kindtree"]
       interval: 2s
       timeout: 3s
       retries: 30
