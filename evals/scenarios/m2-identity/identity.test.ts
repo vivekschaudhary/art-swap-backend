@@ -118,14 +118,15 @@ describe("M2 profile and sessions", () => {
       body: { lat: 37.7749, lng: -122.4194, search_radius_km: 25 },
     });
     expect(res.status, res.text).toBe(200);
-    expect(res.text).not.toMatch(/37\.77|122\.41|"lat"|"lng"|"location"/);
+    // No coordinate keys and no exact coordinate values. The "location" object itself is allowed.
+    expect(res.text).not.toMatch(/"lat"|"lng"|37\.77|122\.41/);
     const problems = match({ location: { area_label: "$string", search_radius_km: 25 } }, res.json);
     expect(problems, formatMismatches(problems)).toEqual([]);
   });
 
   it("GET /v1/me after setting location still exposes no coordinates", async () => {
     const res = await send({ method: "GET", path: "/v1/me", headers: { authorization: `Bearer ${cookieSession.token}` } });
-    expect(res.text).not.toMatch(/37\.77|122\.41|"lat"|"lng"/);
+    expect(res.text).not.toMatch(/"lat"|"lng"|37\.77|122\.41/);
   });
 
   it("a blocked user's profile → 404 NOT_FOUND", async () => {
