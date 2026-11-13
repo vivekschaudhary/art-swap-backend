@@ -8,9 +8,11 @@ import { registerRoutes } from "../src/routes/index.ts";
 import { OPENAPI_DOC } from "../src/http/openapi-config.ts";
 
 const app = createApp({ logger: createLogger("silent"), env: "production" });
+// The spec doesn't call the database or auth, so inert stand-ins are enough here.
 registerRoutes(app, {
   env: "production",
   health: { pingDatabase: async () => true, pingObjectStore: async () => true },
+  identity: { db: null as never, auth: { api: { getSession: async () => null } } as never },
 });
 registerDocs(app);
 

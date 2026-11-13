@@ -10,6 +10,8 @@ export const OPENAPI_DOC = {
   servers: [{ url: "https://api.kindtree.us" }],
   tags: [
     { name: "System", description: "Liveness, readiness and service metadata." },
+    { name: "Profile", description: "The signed-in user's profile, location and public profiles." },
+    { name: "Safety", description: "Blocks and reports." },
     { name: "Test", description: "Test-only routes, registered only when NODE_ENV=test." },
   ],
 };

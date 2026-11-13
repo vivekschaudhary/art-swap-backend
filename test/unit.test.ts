@@ -44,7 +44,13 @@ describe("environment", () => {
       S3_SECRET_ACCESS_KEY: "b",
       S3_BUCKET_PUBLIC: "p",
       S3_BUCKET_PRIVATE: "q",
+      BETTER_AUTH_SECRET: "s".repeat(40),
+      BETTER_AUTH_URL: "http://localhost:3000",
+      PASSKEY_RP_ID: "localhost",
+      PASSKEY_ORIGINS: "http://localhost:3000, https://kindtree.us",
+      SMTP_URL: "smtp://localhost:1025",
     });
+    expect(env.PASSKEY_ORIGINS).toEqual(["http://localhost:3000", "https://kindtree.us"]);
     expect(env.APP_ROLE).toBe("api");
     expect(env.PORT).toBe(3000);
   });

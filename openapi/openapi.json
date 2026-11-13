@@ -20,6 +20,14 @@
       "description": "Liveness, readiness and service metadata."
     },
     {
+      "name": "Profile",
+      "description": "The signed-in user's profile, location and public profiles."
+    },
+    {
+      "name": "Safety",
+      "description": "Blocks and reports."
+    },
+    {
       "name": "Test",
       "description": "Test-only routes, registered only when NODE_ENV=test."
     }
@@ -226,6 +234,745 @@
           },
           "503": {
             "description": "A dependency is unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Current user",
+        "description": "Returns the signed-in user. Creates the profile on first call. Coordinates are never returned.",
+        "responses": {
+          "200": {
+            "description": "The current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bio": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "avatar_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "area_label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "member_since": {
+                      "type": "string"
+                    },
+                    "completed_swaps_count": {
+                      "type": "integer"
+                    },
+                    "onboarded": {
+                      "type": "boolean"
+                    },
+                    "location": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "area_label": {
+                          "type": "string"
+                        },
+                        "search_radius_km": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "area_label",
+                        "search_radius_km"
+                      ]
+                    },
+                    "category_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "has_passkey": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "display_name",
+                    "bio",
+                    "avatar_url",
+                    "area_label",
+                    "member_since",
+                    "completed_swaps_count",
+                    "onboarded",
+                    "location",
+                    "category_ids",
+                    "has_passkey"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMe",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Update display name or bio",
+        "description": "Updates the display name and bio. Onboarding completes once a display name and a location both exist.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "display_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bio": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "avatar_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "area_label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "member_since": {
+                      "type": "string"
+                    },
+                    "completed_swaps_count": {
+                      "type": "integer"
+                    },
+                    "onboarded": {
+                      "type": "boolean"
+                    },
+                    "location": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "area_label": {
+                          "type": "string"
+                        },
+                        "search_radius_km": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "area_label",
+                        "search_radius_km"
+                      ]
+                    },
+                    "category_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "has_passkey": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "display_name",
+                    "bio",
+                    "avatar_url",
+                    "area_label",
+                    "member_since",
+                    "completed_swaps_count",
+                    "onboarded",
+                    "location",
+                    "category_ids",
+                    "has_passkey"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/location": {
+      "put": {
+        "operationId": "putMyLocation",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Set location",
+        "description": "Stores the point rounded to about 100 m. Only the coarse area label and the search radius are ever returned.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lng": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "search_radius_km": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bio": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "avatar_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "area_label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "member_since": {
+                      "type": "string"
+                    },
+                    "completed_swaps_count": {
+                      "type": "integer"
+                    },
+                    "onboarded": {
+                      "type": "boolean"
+                    },
+                    "location": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "area_label": {
+                          "type": "string"
+                        },
+                        "search_radius_km": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "area_label",
+                        "search_radius_km"
+                      ]
+                    },
+                    "category_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "has_passkey": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "display_name",
+                    "bio",
+                    "avatar_url",
+                    "area_label",
+                    "member_since",
+                    "completed_swaps_count",
+                    "onboarded",
+                    "location",
+                    "category_ids",
+                    "has_passkey"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/{id}": {
+      "get": {
+        "operationId": "getUserProfile",
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Public profile",
+        "description": "Returns 404 when either user has blocked the other.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bio": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "avatar_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "area_label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "member_since": {
+                      "type": "string"
+                    },
+                    "completed_swaps_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "display_name",
+                    "bio",
+                    "avatar_url",
+                    "area_label",
+                    "member_since",
+                    "completed_swaps_count"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks": {
+      "post": {
+        "operationId": "createBlock",
+        "tags": [
+          "Safety"
+        ],
+        "summary": "Block a user",
+        "description": "Blocks another user. Blocks hide each user from the other in profiles, feeds and swaps.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "user_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Blocked"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks/{user_id}": {
+      "delete": {
+        "operationId": "deleteBlock",
+        "tags": [
+          "Safety"
+        ],
+        "summary": "Unblock a user",
+        "description": "Removes a block you created.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "user_id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unblocked"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
             "content": {
               "application/problem+json": {
                 "schema": {
