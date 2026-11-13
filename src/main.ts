@@ -7,6 +7,9 @@ import { createApp } from "./http/app.js";
 import { registerDocs } from "./http/docs.js";
 import { registerRoutes } from "./routes/index.js";
 import { startWorker } from "./worker/run.js";
+import { createAuth } from "./auth/auth.js";
+import { createMailer } from "./adapters/mailer.js";
+import { registerAuthRoutes } from "./http/auth-routes.js";
 
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);
@@ -28,13 +31,28 @@ if (env.APP_ROLE === "worker") {
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 } else {
+  const auth = createAuth({
+    pool,
+    secret: env.BETTER_AUTH_SECRET,
+    baseUrl: env.BETTER_AUTH_URL,
+    passkeyRpId: env.PASSKEY_RP_ID,
+    passkeyOrigins: env.PASSKEY_ORIGINS,
+    mailer: createMailer(env.SMTP_URL, env.MAIL_FROM),
+    google:
+      env.GOOGLE_CLIENT_ID_WEB && env.GOOGLE_CLIENT_SECRET
+        ? { clientId: env.GOOGLE_CLIENT_ID_WEB, clientSecret: env.GOOGLE_CLIENT_SECRET }
+        : undefined,
+  });
+
   const app = createApp({ logger, env: env.NODE_ENV });
+  registerAuthRoutes(app, auth);
   registerRoutes(app, {
     env: env.NODE_ENV,
     health: {
       pingDatabase: () => pingDatabase(pool),
       pingObjectStore: () => objectStore.ping(env.S3_BUCKET_PRIVATE),
     },
+    identity: { db: pool, auth },
   });
   registerDocs(app);
 

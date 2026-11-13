@@ -13,21 +13,26 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "evals": "npm --prefix evals run all",
-    "openapi:export": "tsx scripts/export-openapi.ts"
+    "openapi:export": "tsx scripts/export-openapi.ts",
+    "db:migrate": "node dist/db/migrate-cli.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1169.0",
+    "@better-auth/passkey": "^1.7.23",
     "@hono/node-server": "^2.1.8",
     "@hono/zod-openapi": "^1.6.3",
     "@scalar/hono-api-reference": "^0.12.20",
+    "better-auth": "^1.7.23",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.18",
+    "nodemailer": "^7.0.13",
     "pg": "^8.23.1",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "tsx": "^4.23.15",
     "typescript": "~5.9.0",

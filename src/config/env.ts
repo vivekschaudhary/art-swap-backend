@@ -12,6 +12,17 @@ const schema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().min(1),
   S3_BUCKET_PUBLIC: z.string().min(1),
   S3_BUCKET_PRIVATE: z.string().min(1),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.string().url(),
+  PASSKEY_RP_ID: z.string().min(1),
+  PASSKEY_ORIGINS: z
+    .string()
+    .min(1)
+    .transform((v) => v.split(",").map((o) => o.trim()).filter(Boolean)),
+  SMTP_URL: z.string().min(1),
+  MAIL_FROM: z.string().default("Kindtree <no-reply@kindtree.us>"),
+  GOOGLE_CLIENT_ID_WEB: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof schema>;
