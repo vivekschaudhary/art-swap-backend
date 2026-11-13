@@ -101,7 +101,8 @@ describe("M1 structured logging", () => {
     const errorLine = lines.find((l) => levelName(l.level) === "error");
     expect(errorLine, "no error log line for request").toBeDefined();
     expect(errorLine!.request_id).toBe(res.headers["x-request-id"]);
-    expect(JSON.stringify(errorLine)).toMatch(STACK_RE);
+    // The stack is a string field, so check the parsed value (real newlines), not the JSON-encoded line.
+    expect(String((errorLine!.err as { stack?: string } | undefined)?.stack ?? "")).toMatch(STACK_RE);
     expect(JSON.stringify(errorLine)).toMatch(/boom-internal-secret/);
     expect(errorLine!.route).toBe("/v1/__test/boom");
     expect(errorLine!.status).toBe(500);
