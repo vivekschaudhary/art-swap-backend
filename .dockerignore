@@ -1,0 +1,8 @@
+node_modules
+dist
+evals
+docs
+openapi
+.git
+.github
+*.md

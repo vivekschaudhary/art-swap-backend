@@ -61,7 +61,7 @@ One Docker image runs in two modes, chosen by `APP_ROLE=api|worker`. Both are lo
 | Database         | Postgres 16 + PostGIS        | Supabase Pro, via Supavisor (transaction mode)                     | `DATABASE_URL`          |
 | ORM / migrations | SQL                          | Drizzle ORM + drizzle-kit                                          | n/a                     |
 | Auth             | OIDC, WebAuthn               | Better Auth (Google, passkey, email-OTP plugins); tables in our DB | `AuthService`           |
-| Object storage   | S3 API                       | Cloudflare R2; MinIO locally                                       | `ObjectStore`           |
+| Object storage   | S3 API                       | Cloudflare R2; adobe/s3mock locally (S3 API, no account)           | `ObjectStore`           |
 | Image processing | n/a                          | `sharp` in the worker                                              | `ImageProcessor`        |
 | Jobs / cron      | Postgres                     | pg-boss                                                            | `JobQueue`              |
 | Realtime         | SSE + Postgres LISTEN/NOTIFY | built-in                                                           | `EventBus`              |
@@ -644,7 +644,7 @@ Each request passes through one middleware chain, so routes never `try/catch`:
 
 | Env        | Infra                                                                   |
 | ---------- | ----------------------------------------------------------------------- |
-| local      | `docker-compose`: postgis/postgis:16, MinIO, Mailpit, api, worker       |
+| local      | `docker-compose`: postgis/postgis:16-3.4, adobe/s3mock, Mailpit, storage-init (creates buckets), api, worker |
 | staging    | Supabase (free or Pro), R2 bucket `kindtree-staging`, 1× api, 1× worker |
 | production | Supabase Pro, R2 `kindtree-prod`, 2× api, 1× worker, any OCI host       |
 
@@ -777,7 +777,7 @@ then:
 |---|---|
 | **M1 Foundations** | Health and readiness. Unknown route → problem+json `404`. Validation error → `400` with `errors[]`. Thrown unknown error → `500 INTERNAL` with no stack in the body, and a logged stack trace with `request_id`. `/v1/openapi.json` lints clean. E1 rules wired up and failing on a planted violation. |
 | **M2 Identity** | Unauthenticated → `401`. First `GET /me` creates the profile. Location input is never echoed back as coordinates. Email OTP sign-in via Mailpit. Blocked user's profile → `404`. Session works as cookie and as bearer. |
-| **M3 Catalog** | Empty draft saves. Partial attributes accepted on a draft. Publish → `ITEM_NOT_PUBLISHABLE` with the exact `missing[]`. Upload → complete → `ready`, with variants present and EXIF GPS stripped. 11th media → `MEDIA_LIMIT_EXCEEDED`. 51st draft → `DRAFT_LIMIT_REACHED`. Discarding a draft removes its objects from MinIO. Another user reading a draft → `404`. |
+| **M3 Catalog** | Empty draft saves. Partial attributes accepted on a draft. Publish → `ITEM_NOT_PUBLISHABLE` with the exact `missing[]`. Upload → complete → `ready`, with variants present and EXIF GPS stripped. 11th media → `MEDIA_LIMIT_EXCEEDED`. 51st draft → `DRAFT_LIMIT_REACHED`. Discarding a draft removes its objects from the object store. Another user reading a draft → `404`. |
 | **M4 Discovery** | Feed excludes the user's own items, swiped items, blocked users and non-`available` items, and respects the radius. Cursor pagination is stable with no duplicates. Distance is rounded. Undoing a swipe brings the item back. |
 | **M5 Swaps** | Every allowed transition succeeds and every forbidden one → `SWAP_INVALID_TRANSITION`. Accept invalidates other swaps. Parallel accept race. Expiry job at 28 days (clock injected). Non-pickup fulfillment → `FULFILLMENT_NOT_SUPPORTED`. Completion clones as a `swap_received` draft with provenance; originals become `swapped`. History lists completed swaps. Stale `If-Match` → `412`. |
 | **M6 Messaging** | Conversation exists on request. Duplicate `client_message_id` returns the original. Messages are blocked after decline (`CONVERSATION_CLOSED`). SSE delivers `message.created` to the other participant and resumes with `Last-Event-ID`. Read cursor updates unread counts. Push notifications are collapsed per conversation. |
