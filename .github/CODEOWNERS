@@ -1,0 +1,3 @@
+# Evals are human-owned. Claude may draft them only in evals-only PRs (docs/v1-design.md §16).
+/evals/        @vivekschaudhary
+/docs/         @vivekschaudhary

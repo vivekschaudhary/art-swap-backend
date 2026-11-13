@@ -1,0 +1,26 @@
+{
+  "name": "kindtree-swap-evals",
+  "private": true,
+  "type": "module",
+  "description": "Human-owned evals for the Kindtree Swap API. See docs/v1-design.md §16.",
+  "scripts": {
+    "static": "tsx static/check.ts ..",
+    "static:selftest": "vitest run static",
+    "contract:lint": "spectral lint --fail-severity=warn --ruleset contract/spectral.yaml ../openapi/openapi.json",
+    "contract:sync": "vitest run contract",
+    "contract:fuzz": "bash contract/schemathesis.sh",
+    "contract:diff": "bash contract/oasdiff.sh",
+    "contract": "npm run contract:lint && npm run contract:sync && npm run contract:fuzz && npm run contract:diff",
+    "scenarios": "vitest run scenarios",
+    "typecheck": "tsc --noEmit",
+    "all": "npm run typecheck && npm run static:selftest && npm run static && npm run contract && npm run scenarios"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "^6.17.1",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.0",
+    "vitest": "^5.1.0",
+    "yaml": "^2.9.1"
+  }
+}
