@@ -15,6 +15,10 @@ Human-owned checks that decide whether the API matches [docs/v1-design.md](../do
 
 `npm run all` runs everything in order.
 
+## Which milestones gate CI
+
+`milestones.json` lists the `active` milestones. Only their scenarios gate CI. A milestone's scenarios can land before the implementation (evals first), and they join the gate when the implementation PR adds the milestone to `active`.
+
 ## Running the scenarios
 
 1. Start the stack: `docker compose up -d` from the repo root (Postgres with PostGIS on host port 55432, adobe/s3mock, Mailpit, bucket setup, `api`, `worker`).

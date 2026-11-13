@@ -789,7 +789,8 @@ then:
 - `npm run evals` runs E1 to E5 against `docker compose up` locally and in CI. The run is deterministic: seeded data, an injected clock and fixed UUID generation in test mode.
 - CI publishes a scorecard on every PR: the pass/fail count per layer and milestone, newly failing evals, and the E6 rubric score.
 - **Merge rule:**
-  - All hard-gate evals pass for the current milestone and every earlier one.
+  - All hard-gate evals pass for the current milestone and every earlier one. "Current" means the milestones listed as `active` in `evals/milestones.json`.
+  - An evals-only PR may add scenarios for a milestone that isn't built yet. They run but don't gate until the implementation PR adds that milestone to `active`. This keeps evals-first PRs mergeable without weakening any gate.
   - The E6 score is at least 3.5 on average (advisory until M3, then enforced).
   - A human approves.
 - The CI workflow runs `npm run evals` from M1 onwards.
