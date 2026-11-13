@@ -17,7 +17,7 @@ Human-owned checks that decide whether the API matches [docs/v1-design.md](../do
 
 ## Running the scenarios
 
-1. Start the stack: `docker compose up -d` from the repo root (Postgres with PostGIS, MinIO, Mailpit, `api`, `worker`).
+1. Start the stack: `docker compose up -d` from the repo root (Postgres with PostGIS on host port 55432, adobe/s3mock, Mailpit, bucket setup, `api`, `worker`).
 2. Start the API in test mode, so the test-only routes exist: `NODE_ENV=test`.
 3. Run `npm run scenarios` from this directory.
 
