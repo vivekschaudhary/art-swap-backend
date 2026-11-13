@@ -396,10 +396,11 @@ Better Auth handles these routes. Its OpenAPI output is merged into ours.
 | Method     | Path                                                                        | Purpose                                                                                              |
 | ---------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | POST       | `/v1/auth/sign-in/social`                                                   | `{ provider: "google", id_token? }`. Native apps pass a Google ID token; web uses the redirect flow. |
-| GET        | `/v1/auth/callback/google`                                                  | OAuth callback                                                                                       |
-| POST       | `/v1/auth/passkey/generate-register-options` → `/verify-registration`       | Add a passkey to the signed-in user                                                                  |
-| POST       | `/v1/auth/passkey/generate-authenticate-options` → `/verify-authentication` | Sign in with a passkey (discoverable credentials)                                                    |
-| GET/DELETE | `/v1/auth/passkey/list-user-passkeys`, `/delete-passkey`                    | Manage passkeys                                                                                      |
+| GET        | `/v1/auth/callback/{provider}`                                              | OAuth callback. `provider` is `google` (Better Auth's `/callback/:id`).                              |
+| POST       | `/v1/auth/passkey/generate-register-options` → `/passkey/verify-registration` | Add a passkey to the signed-in user (`@better-auth/passkey`)                                       |
+| POST       | `/v1/auth/passkey/generate-authenticate-options` → `/passkey/verify-authentication` | Sign in with a passkey (discoverable credentials)                                            |
+| POST       | `/v1/auth/passkey/register`, `/passkey/authenticate`                        | One-call alternatives to the two-step ceremony, where the client prefers them                       |
+| GET/POST/DELETE | `/v1/auth/passkey/list-user-passkeys`, `/update-passkey`, `/delete-passkey` | Manage passkeys                                                                                      |
 | POST       | `/v1/auth/email-otp/send-verification-otp`, `/sign-in/email-otp`            | Recovery and fallback                                                                                |
 | POST       | `/v1/auth/sign-out`                                                         |                                                                                                      |
 | GET        | `/v1/auth/get-session`                                                      |                                                                                                      |
@@ -788,7 +789,8 @@ then:
 - `npm run evals` runs E1 to E5 against `docker compose up` locally and in CI. The run is deterministic: seeded data, an injected clock and fixed UUID generation in test mode.
 - CI publishes a scorecard on every PR: the pass/fail count per layer and milestone, newly failing evals, and the E6 rubric score.
 - **Merge rule:**
-  - All hard-gate evals pass for the current milestone and every earlier one.
+  - All hard-gate evals pass for the current milestone and every earlier one. "Current" means the milestones listed as `active` in `evals/milestones.json`.
+  - An evals-only PR may add scenarios for a milestone that isn't built yet. They run but don't gate until the implementation PR adds that milestone to `active`. This keeps evals-first PRs mergeable without weakening any gate.
   - The E6 score is at least 3.5 on average (advisory until M3, then enforced).
   - A human approves.
 - The CI workflow runs `npm run evals` from M1 onwards.
