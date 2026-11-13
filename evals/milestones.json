@@ -1,4 +1,7 @@
 {
-  "_comment": "Milestones whose scenarios gate CI. An evals-only PR may add scenarios for a milestone that isn't built yet; they run, but don't gate until the implementation PR adds the milestone here. docs/v1-design.md §16.5.",
-  "active": ["m1-foundations"]
+  "_comment": "Milestones whose scenarios gate CI. An evals-only PR may add scenarios for a milestone that isn't built yet; they run, but don't gate until the implementation PR adds the milestone here. docs/v1-design.md \u00a716.5.",
+  "active": [
+    "m1-foundations",
+    "m2-identity"
+  ]
 }
