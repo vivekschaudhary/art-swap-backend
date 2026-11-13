@@ -1,0 +1,13 @@
+# E2 contract lint: Spectral's OpenAPI rules plus Kindtree rules from docs/v1-design.md §7–§10.
+# Location and pagination rules are enforced by E4 invariants and scenarios, not here.
+extends: ["spectral:oas"]
+rules:
+  operation-operationId: error
+  operation-tags: error
+  kt-problem-json-errors:
+    description: Every 4xx and 5xx response must document application/problem+json (§10.1).
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^[45]/))].content"
+    then:
+      field: "application/problem+json"
+      function: truthy
