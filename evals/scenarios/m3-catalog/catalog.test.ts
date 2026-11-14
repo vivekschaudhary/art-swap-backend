@@ -34,8 +34,22 @@ let artCategoryId: string;
 let owner: Session;
 let other: Session;
 
+/** Publishing requires an onboarded owner: a display name and a location (design §6.2). */
+async function onboard(s: Session) {
+  const name = await send({ method: "PATCH", path: "/v1/me", headers: auth(s), body: { display_name: "Test Owner" } });
+  expect(name.status, name.text).toBe(200);
+  const loc = await send({
+    method: "PUT",
+    path: "/v1/me/location",
+    headers: auth(s),
+    body: { lat: 37.7749, lng: -122.4194, search_radius_km: 25 },
+  });
+  expect(loc.status, loc.text).toBe(200);
+}
+
 beforeAll(async () => {
   owner = await signIn(emailFor("owner"));
+  await onboard(owner);
   other = await signIn(emailFor("other"));
   const res = await send({ method: "GET", path: "/v1/categories" });
   expect(res.status).toBe(200);
@@ -191,6 +205,17 @@ describe("M3 media", () => {
     const res = await send({ method: "POST", path: `/v1/items/${draft.id}/publish`, headers: auth(owner) });
     expect(res.status, res.text).toBe(200);
     expect((res.json as { status: string }).status).toBe("available");
+  });
+});
+
+describe("M3 publish requires onboarding", () => {
+  it("a complete draft from a user who hasn't onboarded → 403 ONBOARDING_REQUIRED", async () => {
+    const newcomer = await signIn(emailFor("newcomer"));
+    const draft = await createDraft(newcomer, { category_id: artCategoryId, title: "Early", condition: "good", attributes: { medium: "oil" } });
+    await uploadMedia(newcomer, draft.id, photoWithGps());
+    await waitForMediaReady(newcomer, draft.id);
+    const res = await send({ method: "POST", path: `/v1/items/${draft.id}/publish`, headers: auth(newcomer) });
+    expectProblem(res, 403, "ONBOARDING_REQUIRED");
   });
 });
 
