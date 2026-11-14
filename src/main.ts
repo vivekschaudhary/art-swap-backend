@@ -13,6 +13,7 @@ import { createMailer } from "./adapters/mailer.js";
 import { registerAuthRoutes } from "./http/auth-routes.js";
 import { createAreaLabeler } from "./adapters/area-labeler.js";
 import { processMedia } from "./catalog/process-media.js";
+import { googleProviderConfig } from "./auth/google-config.js";
 
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);
@@ -62,10 +63,7 @@ if (env.APP_ROLE === "worker") {
     passkeyRpId: env.PASSKEY_RP_ID,
     passkeyOrigins: env.PASSKEY_ORIGINS,
     mailer: createMailer(env.SMTP_URL, env.MAIL_FROM),
-    google:
-      env.GOOGLE_CLIENT_ID_WEB && env.GOOGLE_CLIENT_SECRET
-        ? { clientId: env.GOOGLE_CLIENT_ID_WEB, clientSecret: env.GOOGLE_CLIENT_SECRET }
-        : undefined,
+    google: googleProviderConfig(env),
   });
 
   const app = createApp({ logger, env: env.NODE_ENV });

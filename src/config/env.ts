@@ -22,6 +22,8 @@ const schema = z.object({
   SMTP_URL: z.string().min(1),
   MAIL_FROM: z.string().default("Kindtree <no-reply@kindtree.us>"),
   GOOGLE_CLIENT_ID_WEB: z.string().optional(),
+  GOOGLE_CLIENT_ID_IOS: z.string().optional(),
+  GOOGLE_CLIENT_ID_ANDROID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
   S3_PUBLIC_ENDPOINT: z.string().url().optional(),
