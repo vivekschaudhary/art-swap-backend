@@ -365,7 +365,7 @@ Notation: `→` means the response body. Unless stated, success is `200`, and cr
 ```
 ProfilePublic   { id, display_name, bio, avatar_url, area_label, member_since, completed_swaps_count }
 Me              ProfilePublic + { email, onboarded, location: { area_label, search_radius_km }, category_ids[], has_passkey }
-Media           { id, position, status, width, height, blurhash, urls: { thumb, card, full } }
+Media           { id, position, status, width, height, blurhash, urls: { thumb, card, full }, variants: { thumb: {w,h}, card: {w,h}, full: {w,h} } }   // variants = served pixel sizes; present when ready
 ItemSummary     { id, title, category: {id, slug, name}, condition, cover: Media, area_label, owner: { id, display_name, avatar_url } }
 Item            ItemSummary + { description, attributes, estimated_value: {amount_cents, currency} | null,
                                 fulfillment_options[], status, source, media: Media[], origin_item_id, published_at, created_at, updated_at, version,
@@ -446,6 +446,12 @@ Sessions: web uses an HTTP-only, Secure, `SameSite=Lax` cookie on `.kindtree.us`
 | PATCH  | `/v1/items/{id}/media/order`      | `{ media_ids[] }` (full order)                                                                        | `Media[]`                                                                                      |
 | DELETE | `/v1/items/{id}/media/{media_id}` |                                                                                                       | `204`                                                                                          |
 | GET    | `/v1/items/{id}/provenance`       |                                                                                                       | `[{ item_id, owner: {id, display_name}, from, to, swap_id }]` (oldest first)                   |
+
+**Contract details (pinned by evals/scenarios/m3-catalog):**
+- `publish_readiness.missing` and the `errors[].field` names on `ITEM_NOT_PUBLISHABLE` use these canonical names: `category`, `title`, `condition`, `media`, plus `attributes.<field>` for a required category attribute.
+- A `412 VERSION_CONFLICT` body is the problem+json plus `current`: the latest `Item`, so the client can merge without another call.
+- Upload URLs are presigned against `S3_PUBLIC_ENDPOINT`, the address clients can reach. It defaults to `S3_ENDPOINT`.
+- The `art` category is seeded by a migration, so `GET /v1/categories` has it on a fresh database.
 
 Upload flow: request upload URLs → client sends `PUT` to R2 → `complete` → the worker validates the magic bytes and size, strips EXIF, makes the variants and blurhash, and sets `ready` (or `failed`). Clients poll `GET /items/{id}` or listen on SSE for `media.ready`.
 
