@@ -49,6 +49,7 @@ describe("environment", () => {
       PASSKEY_RP_ID: "localhost",
       PASSKEY_ORIGINS: "http://localhost:3000, https://kindtree.us",
       SMTP_URL: "smtp://localhost:1025",
+      MEDIA_PUBLIC_BASE_URL: "http://localhost:9090",
     });
     expect(env.PASSKEY_ORIGINS).toEqual(["http://localhost:3000", "https://kindtree.us"]);
     expect(env.APP_ROLE).toBe("api");

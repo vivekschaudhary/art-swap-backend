@@ -14,6 +14,16 @@ registerRoutes(app, {
   env: "production",
   health: { pingDatabase: async () => true, pingObjectStore: async () => true },
   identity: { db: null as never, auth: { api: { getSession: async () => null } } as never, labeler: gridAreaLabeler },
+  catalog: {
+    db: null as never,
+    auth: { api: { getSession: async () => null } } as never,
+    store: null as never,
+    queue: null as never,
+    logger: createLogger("silent"),
+    privateBucket: "",
+    publicBucket: "",
+    mediaBaseUrl: "",
+  },
 });
 registerDocs(app);
 
