@@ -51,7 +51,7 @@ beforeAll(async () => {
   owner = await signIn(emailFor("owner"));
   await onboard(owner);
   other = await signIn(emailFor("other"));
-  const res = await send({ method: "GET", path: "/v1/categories" });
+  const res = await send({ method: "GET", path: "/v1/categories", headers: auth(owner) });
   expect(res.status).toBe(200);
   const art = (res.json as { id: string; slug: string; attribute_schema: unknown }[]).find((c) => c.slug === "art");
   expect(art, "the 'art' category must be seeded").toBeDefined();
@@ -60,7 +60,7 @@ beforeAll(async () => {
 
 describe("M3 categories", () => {
   it("GET /v1/categories lists the seeded art category with its attribute schema", async () => {
-    const res = await send({ method: "GET", path: "/v1/categories" });
+    const res = await send({ method: "GET", path: "/v1/categories", headers: auth(owner) });
     expect(res.status).toBe(200);
     const problems = match(
       [{ id: "$string", slug: "art", name: "$string", attribute_schema: { type: "object" } }],
