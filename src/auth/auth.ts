@@ -11,7 +11,7 @@ export type AuthConfig = {
   passkeyRpId: string;
   passkeyOrigins: string[];
   mailer: Mailer;
-  google?: { clientId: string; clientSecret: string };
+  google?: { clientId: string[]; clientSecret: string };
 };
 
 /**
