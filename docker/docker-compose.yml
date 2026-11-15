@@ -1,4 +1,7 @@
-# Local stack for development and evals (docs/v1-design.md §12). No vendor accounts needed.
+name: art-swap-backend
+# Local stack for development and evals (docs/v1-design.md §12).
+# Run from the repo root:  docker compose -f docker/docker-compose.yml up -d --build --wait
+# Kept out of the repo root so Vercel does not read it as a deployment (Compose files there map to Vercel services). No vendor accounts needed.
 # Local runs use NODE_ENV=test, which enables the test-only routes the evals depend on.
 # Local object store: adobe/s3mock (S3 API). Production uses Cloudflare R2 through the same S3 API.
 x-api-env: &api-env
@@ -42,7 +45,9 @@ services:
     ports: ["9090:9090"]
 
   migrate:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     command: ["node", "dist/db/migrate-cli.js"]
     environment:
       <<: *api-env
@@ -51,7 +56,9 @@ services:
     restart: "no"
 
   storage-init:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     command: ["node", "dist/cli/ensure-buckets.js"]
     environment:
       <<: *api-env
@@ -64,7 +71,9 @@ services:
     ports: ["8025:8025", "1025:1025"]
 
   api:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     environment:
       <<: *api-env
       APP_ROLE: api
@@ -76,7 +85,9 @@ services:
       storage-init: { condition: service_completed_successfully }
 
   worker:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     environment:
       <<: *api-env
       APP_ROLE: worker

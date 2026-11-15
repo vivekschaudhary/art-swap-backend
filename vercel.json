@@ -1,0 +1,23 @@
+{
+  "framework": "hono",
+  "regions": [
+    "iad1"
+  ],
+  "functions": {
+    "api/jobs/media-process.ts": {
+      "maxDuration": 60,
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "media-process"
+        }
+      ]
+    }
+  },
+  "crons": [
+    {
+      "path": "/internal/jobs/cron/media-gc",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

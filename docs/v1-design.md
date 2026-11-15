@@ -663,11 +663,11 @@ Each request passes through one middleware chain, so routes never `try/catch`:
 
 | Env        | Infra |
 | ---------- | ----- |
-| local      | `docker-compose`: postgis/postgis:16-3.4, adobe/s3mock, Mailpit, storage-init (creates buckets), migrate, api, worker. Jobs use pg-boss. |
+| local      | `docker/docker-compose.yml`: postgis/postgis:16-3.4, adobe/s3mock, Mailpit, storage-init (creates buckets), migrate, api, worker. Jobs use pg-boss. |
 | staging    | Vercel project for the API (Functions, Queues, Cron). Supabase (free or Pro). R2 bucket `kindtree-staging`. |
 | production | Vercel project for the API (Functions, Queues, Cron). Supabase Pro. R2 `kindtree-prod`. |
 
-Production runs the API as Vercel Functions behind `api.kindtree.us`. The Docker image is used for local development and CI only. Locally, the `worker` service consumes pg-boss jobs; on Vercel, the job handlers are Functions and no worker runs.
+Production runs the API as Vercel Functions behind `api.kindtree.us`. The Docker image and the Compose file live under `docker/`. They are used for local development and CI only. The Compose file stays out of the repo root, because Vercel maps root Compose files to deployable services. Locally, the `worker` service consumes pg-boss jobs; on Vercel, the job handlers are Functions and no worker runs.
 
 Environment variables: `JOB_BACKEND` (`vercel` or `pgboss`), `CRON_SECRET`, `APP_ROLE` (local only: `api` or `worker`), `DATABASE_URL`, `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `MEDIA_PUBLIC_BASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PASSKEY_RP_ID=kindtree.us`, `PASSKEY_ORIGINS`, `GOOGLE_CLIENT_ID_WEB`, `GOOGLE_CLIENT_ID_IOS`, `GOOGLE_CLIENT_ID_ANDROID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_MAPS_API_KEY`, `SMTP_URL`, `MAIL_FROM`, `FCM_SERVICE_ACCOUNT_JSON`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `SWAP_PENDING_TTL=28d`, `CORS_ORIGINS`.
 
