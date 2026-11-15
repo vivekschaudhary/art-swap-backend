@@ -545,7 +545,7 @@ Jobs run through the `JobQueue` adapter (§3.1). Two triggers are used:
 | `outbox.relay`         | enqueued at commit of each outbox write      | Queue, plus a Cron sweep each minute | Turn outbox rows into notifications, push and SSE; mark processed. The sweep catches anything an enqueue missed. |
 | `push.send`            | from the relay                               | Queue                              | FCM/APNs through `Notifier`; prune invalid tokens |
 | `items.relocate`       | owner location change                        | Queue                              | Refresh `location` and `area_label` on that owner's `available` items |
-| `accounts.purge`       | enqueued with a 30-day delay on `DELETE /me` | Queue (delayed)                    | Hard-delete personal data; anonymize the user's side of past swaps |
+| `accounts.purge`       | cron daily: finds accounts deleted 30+ days ago | Cron                        | Hard-delete personal data; anonymize the user's side of past swaps. A queue delay can't hold a job for 30 days (Queues max delay is 7 days). |
 | `swaps.expire`         | cron hourly                                  | Cron                               | Expire `pending` swaps past `expires_at` |
 | `swaps.remind_confirm` | cron daily                                   | Cron                               | Remind on days 3 and 10 of a one-sided confirmation |
 | `media.gc`             | cron daily                                   | Cron                               | Delete `pending` media older than 24 h and orphaned objects (never a draft's `ready` media) |
