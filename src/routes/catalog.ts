@@ -597,7 +597,7 @@ export function registerCatalogRoutes(app: OpenAPIHono<AppEnv>, deps: CatalogDep
       if (sniffed !== row.mime) await reject("The file isn't a valid image of the declared type.");
 
       await db.query("update item_media set status = 'processing', updated_at = now() where id = $1", [mediaId]);
-      await queue.send("media.process", { mediaId }, mediaId);
+      await queue.send("media-process", { mediaId }, { singletonKey: mediaId });
       out.push({ id: row.id, status: "processing" });
     }
     return c.json({ media: out } as never, 202);

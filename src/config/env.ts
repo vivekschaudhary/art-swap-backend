@@ -27,6 +27,8 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
   S3_PUBLIC_ENDPOINT: z.string().url().optional(),
+  JOB_BACKEND: z.enum(["vercel", "pgboss"]).default("pgboss"),
+  CRON_SECRET: z.string().min(16).optional(),
   MEDIA_PUBLIC_BASE_URL: z.string().url(),
 });
 
@@ -38,6 +40,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (!parsed.success) {
     const details = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment: ${details}`);
+  }
+  if (parsed.data.JOB_BACKEND === "vercel" && !parsed.data.CRON_SECRET) {
+    throw new Error("Invalid environment: CRON_SECRET is required when JOB_BACKEND=vercel");
   }
   return parsed.data;
 }
