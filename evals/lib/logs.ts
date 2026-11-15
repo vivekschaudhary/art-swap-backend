@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
  * Reads the API's structured JSON logs.
  *
  * - EVALS_API_LOG_FILE: path to a file of JSON lines, if set.
- * - Otherwise runs EVALS_API_LOG_CMD (default: `docker compose logs --no-log-prefix --no-color api`
+ * - Otherwise runs EVALS_API_LOG_CMD (default: `docker compose -f docker/docker-compose.yml logs --no-log-prefix --no-color api`
  *   from the repo root).
  *
  * Non-JSON lines are ignored.
@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 export function readApiLogs(): Record<string, unknown>[] {
   const raw = process.env.EVALS_API_LOG_FILE
     ? readFileSync(process.env.EVALS_API_LOG_FILE, "utf8")
-    : execSync(process.env.EVALS_API_LOG_CMD ?? "docker compose logs --no-log-prefix --no-color api", {
+    : execSync(process.env.EVALS_API_LOG_CMD ?? "docker compose -f docker/docker-compose.yml logs --no-log-prefix --no-color api", {
         cwd: new URL("../..", import.meta.url).pathname,
         encoding: "utf8",
         maxBuffer: 64 * 1024 * 1024,
