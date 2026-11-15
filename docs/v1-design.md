@@ -8,7 +8,7 @@ Headless API for Kindtree Swap: users list items, discover others' items through
 
 ## 1. Principles
 
-1. **No vendor lock-in.** Code depends only on open standards: Postgres, S3 API, OIDC/WebAuthn, SMTP, OpenTelemetry, OCI containers. Every vendor sits behind an adapter selected by env config. The whole stack must run offline via `docker-compose`.
+1. **No vendor lock-in.** Code depends only on open standards: Postgres, S3 API, OIDC/WebAuthn, SMTP, OpenTelemetry, OCI containers. Vercel hosts the API and jobs in production, and Vercel-specific code stays inside adapters (`JobQueue`) and deploy config. Every vendor sits behind an adapter selected by env config. The whole stack must run offline via `docker-compose`.
 2. **The API is the only contract.** Clients never touch the database. Two exceptions: direct-to-storage uploads via presigned URLs, and OAuth redirects.
 3. **Privacy by default.** Exact location is never exposed. No addresses are collected in v1.
 4. **Every endpoint is documented and observable by construction.** A single route wrapper does auth, validation, error mapping, logging, tracing and OpenAPI registration.
@@ -40,18 +40,20 @@ Headless API for Kindtree Swap: users list items, discover others' items through
  iOS / Android / Web
         │  HTTPS (Bearer token or cookie)          presigned PUT
         ▼                                     ┌──────────────────────► R2 (S3 API)
- ┌──────────────────────┐   enqueue / SQL    │                          ▲
- │  api  (Hono, Node)   │────────────────────┼──► Postgres + PostGIS    │ variants
- │  /v1/*  SSE  /docs   │◄── LISTEN/NOTIFY ──┤    (Supabase-hosted)     │
- └──────────────────────┘                    │         ▲                │
- ┌──────────────────────┐   pg-boss jobs     │         │                │
- │ worker (same image)  │────────────────────┘─────────┘── sharp ───────┘
- │ media, outbox, cron  │──► FCM / APNs (Notifier) ──► SMTP (Mailer)
- └──────────────────────┘
+ ┌────────────────────────────┐  enqueue / SQL │                          ▲
+ │ api: Hono on Vercel        │────────────────┼──► Postgres + PostGIS    │ variants
+ │ Functions  /v1/*  SSE      │                │    (Supabase-hosted)     │
+ └────────────┬───────────────┘                │         ▲                │
+              │ Vercel Queues / Cron           │         │                │
+ ┌────────────▼───────────────┐                │         │                │
+ │ job handlers: Vercel       │────────────────┘─────────┘── sharp ───────┘
+ │ Functions (Queue consumer) │──► FCM / APNs (Notifier) ──► SMTP (Mailer)
+ │ Cron → sweep routes        │
+ └────────────────────────────┘
         └──► OpenTelemetry exporter (Grafana Cloud)
 ```
 
-One Docker image runs in two modes, chosen by `APP_ROLE=api|worker`. Both are long-running Node processes; no serverless runtime is assumed.
+The API and the job handlers are Vercel Functions in production. Locally, the same code runs under Docker Compose, and the job layer uses pg-boss instead of Vercel Queues. The choice is made by config (`JOB_BACKEND=vercel|pgboss`). Nothing outside the `JobQueue` adapter knows which one is in use (§3.1).
 
 ### 3.1 Components
 
@@ -62,8 +64,8 @@ One Docker image runs in two modes, chosen by `APP_ROLE=api|worker`. Both are lo
 | ORM / migrations | SQL                          | Drizzle ORM + drizzle-kit                                          | n/a                     |
 | Auth             | OIDC, WebAuthn               | Better Auth (Google, passkey, email-OTP plugins); tables in our DB | `AuthService`           |
 | Object storage   | S3 API                       | Cloudflare R2; adobe/s3mock locally (S3 API, no account)           | `ObjectStore`           |
-| Image processing | n/a                          | `sharp` in the worker                                              | `ImageProcessor`        |
-| Jobs / cron      | Postgres                     | pg-boss                                                            | `JobQueue`              |
+| Image processing | n/a                          | `sharp` inside the media job handler (Node runtime)                | `ImageProcessor`        |
+| Jobs / cron      | Vercel Queues + Cron (production); pg-boss (local) | see §8                                                 | `JobQueue`              |
 | Realtime         | SSE + Postgres LISTEN/NOTIFY | built-in                                                           | `EventBus`              |
 | Push             | FCM HTTP v1, APNs            | direct                                                             | `Notifier`              |
 | Email            | SMTP                         | any relay; Mailpit locally                                         | `Mailer`                |
@@ -293,7 +295,7 @@ Unique: `(conversation_id, sender_id, client_message_id)`. Index: `(conversation
 
 **`rate_limit_buckets`**: `key` PK, `window_start`, `count`. Fixed-window counters kept in Postgres. Redis can replace this later behind the same interface.
 
-pg-boss creates and manages its own `pgboss` schema.
+Locally, the pg-boss adapter creates and manages its own `pgboss` schema. Production uses Vercel Queues and needs no extra schema.
 
 ## 6. State machines
 
@@ -329,7 +331,7 @@ pg-boss creates and manages its own `pgboss` schema.
 3. Update the items to `reserved` and the swap to `accepted`, and bump `version`.
 4. Find other `pending` swaps containing these items through `swap_items(item_id)`, and set them to `unavailable`.
 5. Insert `swap_events`, system messages and `outbox_events`.
-6. Commit. The worker relays the outbox to push notifications and SSE.
+6. Commit. The API enqueues an `outbox.relay` job once the transaction commits. A minute-level Cron sweep picks up anything missed (§8).
 
 **Completion** (runs in the transaction of the second `confirm-received`):
 
@@ -339,7 +341,7 @@ pg-boss creates and manages its own `pgboss` schema.
 2. Set the original item to `swapped`, and set `resulting_item_id` on the `swap_item`.
 3. Set the swap to `completed` with `completed_at`.
 
-Reminders: if only one side has confirmed, the worker reminds the other on days 3 and 10. v1 never auto-completes a swap (open question O3).
+Reminders: if only one side has confirmed, a daily Cron job reminds the other on days 3 and 10. v1 never auto-completes a swap (open question O3).
 
 ### 6.2 Item
 
@@ -453,7 +455,7 @@ Sessions: web uses an HTTP-only, Secure, `SameSite=Lax` cookie on `.kindtree.us`
 - Upload URLs are presigned against `S3_PUBLIC_ENDPOINT`, the address clients can reach. It defaults to `S3_ENDPOINT`.
 - The `art` category is seeded by a migration, so `GET /v1/categories` has it on a fresh database.
 
-Upload flow: request upload URLs → client sends `PUT` to R2 → `complete` → the worker validates the magic bytes and size, strips EXIF, makes the variants and blurhash, and sets `ready` (or `failed`). Clients poll `GET /items/{id}` or listen on SSE for `media.ready`.
+Upload flow: request upload URLs → client sends `PUT` to R2 → `complete` → the media job validates the magic bytes and size, strips EXIF, makes the variants and blurhash, and sets `ready` (or `failed`). Clients poll `GET /items/{id}` or listen on SSE for `media.ready`.
 
 ### 7.7 Discovery
 
@@ -530,22 +532,29 @@ Fan-out: after commit, application code calls `SELECT pg_notify('user_<uuid>', �
 
 Notification types: `swap.requested`, `swap.accepted`, `swap.declined`, `swap.withdrawn`, `swap.expired`, `swap.unavailable`, `swap.cancelled`, `swap.received_confirmed`, `swap.completed`, `swap.reminder_confirm`, `message.created` (collapsed to one push per conversation every 5 minutes).
 
-## 8. Background jobs (pg-boss)
+## 8. Background jobs
 
-| Job                    | Trigger                         | Work                                                                  |
-| ---------------------- | ------------------------------- | --------------------------------------------------------------------- |
-| `media.process`        | `media/complete`                | Validate, strip EXIF, make variants, blurhash, mark `ready`/`failed`  |
-| `outbox.relay`         | every 5 s plus a NOTIFY wake-up | Turn outbox rows into notifications, push and SSE; mark processed     |
-| `push.send`            | from relay                      | FCM/APNs through `Notifier`; prune invalid tokens                     |
-| `swaps.expire`         | cron hourly                     | Expire `pending` swaps past `expires_at`                              |
-| `swaps.remind_confirm` | cron daily                      | Remind on days 3 and 10 of a one-sided confirmation                   |
-| `items.relocate`       | owner location change           | Refresh `location` and `area_label` on that owner's `available` items |
-| `media.gc`             | cron daily                      | Delete `pending` media older than 24 h and orphaned objects (never a draft's `ready` media) |
-| `drafts.remind`        | cron daily                      | One push per draft, 3 days after its last edit ("Finish listing …"). Respects the user's notification settings. |
-| `idempotency.gc`       | cron daily                      | Purge expired keys                                                    |
-| `accounts.purge`       | 30 days after `DELETE /me`      | Hard-delete personal data; anonymize the user's side of past swaps    |
+Jobs run through the `JobQueue` adapter (§3.1). Two triggers are used:
 
-Every job is idempotent and retried with backoff (max 5). After that it lands in a dead-letter queue, which raises an alert.
+- **Queue** (Vercel Queues in production, pg-boss locally): work started by a request or by another job.
+- **Cron** (Vercel Cron Jobs in production, a pg-boss schedule locally): work on a clock. Vercel Cron runs at most once a minute, so sub-minute timing is not possible.
+
+| Job                    | Trigger                                      | Mechanism                          | Work |
+| ---------------------- | -------------------------------------------- | ---------------------------------- | ---- |
+| `media.process`        | `media/complete`                             | Queue                              | Validate, strip EXIF, make variants, blurhash, mark `ready`/`failed` |
+| `outbox.relay`         | enqueued at commit of each outbox write      | Queue, plus a Cron sweep each minute | Turn outbox rows into notifications, push and SSE; mark processed. The sweep catches anything an enqueue missed. |
+| `push.send`            | from the relay                               | Queue                              | FCM/APNs through `Notifier`; prune invalid tokens |
+| `items.relocate`       | owner location change                        | Queue                              | Refresh `location` and `area_label` on that owner's `available` items |
+| `accounts.purge`       | enqueued with a 30-day delay on `DELETE /me` | Queue (delayed)                    | Hard-delete personal data; anonymize the user's side of past swaps |
+| `swaps.expire`         | cron hourly                                  | Cron                               | Expire `pending` swaps past `expires_at` |
+| `swaps.remind_confirm` | cron daily                                   | Cron                               | Remind on days 3 and 10 of a one-sided confirmation |
+| `media.gc`             | cron daily                                   | Cron                               | Delete `pending` media older than 24 h and orphaned objects (never a draft's `ready` media) |
+| `drafts.remind`        | cron daily                                   | Cron                               | One push per draft, 3 days after its last edit ("Finish listing …"). Respects the user's notification settings. |
+| `idempotency.gc`       | cron daily                                   | Cron                               | Purge expired keys |
+
+**Retries and idempotency.** Every job is idempotent. The queue retries failures with backoff, and after the retry limit a job goes to a dead-letter queue that raises an alert. Cron handlers take a lock per run, so an overlapping run does nothing.
+
+**Routes.** Queue consumers and Cron targets are Hono routes under `/internal/jobs/*`. Vercel sends Cron requests with a secret (`CRON_SECRET`), and the handler rejects anything without it. These routes are excluded from the public OpenAPI document.
 
 ## 9. Validation and docs
 
@@ -621,7 +630,7 @@ Each request passes through one middleware chain, so routes never `try/catch`:
 
 - **pino** writes JSON to stdout with these fields: `level, time, request_id, trace_id, user_id, route, method, status, latency_ms, error.code`.
 - **Redaction:** `authorization`, `cookie`, `*.token`, `push_token`, `lat`, `lng`, `location`, `email`, message `body`, `attachments`. Request and response bodies are never logged.
-- **OpenTelemetry:** traces cover HTTP, Postgres (`pg` instrumentation), the S3 client and pg-boss jobs. Metrics: request rate, latency and errors per route; job durations and failures; outbox lag; SSE connections.
+- **OpenTelemetry:** traces cover HTTP, Postgres (`pg` instrumentation), the S3 client and job handlers. Metrics: request rate, latency and errors per route; job durations and failures; outbox lag; SSE connections.
 - **Alerts:** 5xx rate above 1 % for 5 minutes, p95 latency above 1 s, outbox lag above 60 s, any dead-letter job, readiness failing.
 - **Business audit trail:** `swap_events`.
 
@@ -652,13 +661,15 @@ Each request passes through one middleware chain, so routes never `try/catch`:
 
 ## 12. Environments and delivery
 
-| Env        | Infra                                                                   |
-| ---------- | ----------------------------------------------------------------------- |
-| local      | `docker-compose`: postgis/postgis:16-3.4, adobe/s3mock, Mailpit, storage-init (creates buckets), api, worker |
-| staging    | Supabase (free or Pro), R2 bucket `kindtree-staging`, 1× api, 1× worker |
-| production | Supabase Pro, R2 `kindtree-prod`, 2× api, 1× worker, any OCI host       |
+| Env        | Infra |
+| ---------- | ----- |
+| local      | `docker-compose`: postgis/postgis:16-3.4, adobe/s3mock, Mailpit, storage-init (creates buckets), migrate, api, worker. Jobs use pg-boss. |
+| staging    | Vercel project for the API (Functions, Queues, Cron). Supabase (free or Pro). R2 bucket `kindtree-staging`. |
+| production | Vercel project for the API (Functions, Queues, Cron). Supabase Pro. R2 `kindtree-prod`. |
 
-Environment variables: `APP_ROLE`, `DATABASE_URL`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `MEDIA_PUBLIC_BASE_URL`, `AUTH_SECRET`, `AUTH_BASE_URL`, `PASSKEY_RP_ID=kindtree.us`, `PASSKEY_ORIGINS`, `GOOGLE_CLIENT_ID_WEB`, `GOOGLE_CLIENT_ID_IOS`, `GOOGLE_CLIENT_ID_ANDROID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_MAPS_API_KEY`, `SMTP_URL`, `FCM_SERVICE_ACCOUNT_JSON`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `SWAP_PENDING_TTL=28d`, `CORS_ORIGINS`.
+Production runs the API as Vercel Functions behind `api.kindtree.us`. The Docker image is used for local development and CI only. Locally, the `worker` service consumes pg-boss jobs; on Vercel, the job handlers are Functions and no worker runs.
+
+Environment variables: `JOB_BACKEND` (`vercel` or `pgboss`), `CRON_SECRET`, `APP_ROLE` (local only: `api` or `worker`), `DATABASE_URL`, `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `MEDIA_PUBLIC_BASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PASSKEY_RP_ID=kindtree.us`, `PASSKEY_ORIGINS`, `GOOGLE_CLIENT_ID_WEB`, `GOOGLE_CLIENT_ID_IOS`, `GOOGLE_CLIENT_ID_ANDROID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_MAPS_API_KEY`, `SMTP_URL`, `MAIL_FROM`, `FCM_SERVICE_ACCOUNT_JSON`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `SWAP_PENDING_TTL=28d`, `CORS_ORIGINS`.
 
 **CI.** Every step is an `npm` script, so any CI runner works. v1 uses GitHub Actions (`.github/workflows/ci.yml`).
 
@@ -669,7 +680,7 @@ Environment variables: `APP_ROLE`, `DATABASE_URL`, `S3_ENDPOINT`, `S3_REGION`, `
 5. OpenAPI build, lint and breaking-change diff
 6. Docker build
 
-**Deploy:** migrations run as a one-off release step before new containers start. Migrations must be backward compatible (expand, then contract).
+**Deploy:** migrations run as a one-off release step before the API deploys. On Vercel that is a pre-deploy command. Migrations must be backward compatible (expand, then contract).
 
 ### Must-have tests
 
