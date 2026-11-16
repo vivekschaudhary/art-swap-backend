@@ -3,6 +3,7 @@
   "active": [
     "m1-foundations",
     "m2-identity",
-    "m3-catalog"
+    "m3-catalog",
+    "m4-discovery"
   ]
 }
