@@ -104,10 +104,11 @@ describe("M6 sending and reading", () => {
   });
 
   it("messages come back newest first with a cursor for older ones", async () => {
-    const res = await send({ method: "GET", path: `/v1/conversations/${conversationId}/messages?limit=2`, headers: auth(t.requester) });
+    // Two messages are sent in this block, so a page of one must leave older history behind.
+    const res = await send({ method: "GET", path: `/v1/conversations/${conversationId}/messages?limit=1`, headers: auth(t.requester) });
     expect(res.status).toBe(200);
     const page = res.json as { data: { body: string }[]; next_cursor: string | null };
-    expect(page.data.length).toBeLessThanOrEqual(2);
+    expect(page.data.length).toBe(1);
     expect(page.next_cursor, "more history should give a cursor").not.toBeNull();
   });
 
