@@ -11,6 +11,14 @@ import type { Mailer } from "../adapters/mailer.js";
 export const WEB_ORIGINS = ["https://kindtree.us"];
 export const LOCAL_ORIGINS = ["http://localhost:3000"];
 
+/** Session cookies are shared across kindtree.us in production, so the web app on kindtree.us can read them. */
+export const COOKIE_DOMAIN = "kindtree.us";
+
+export function cookieOptions(env: string | undefined) {
+  if (env !== "production") return {};
+  return { advanced: { crossSubDomainCookies: { enabled: true, domain: COOKIE_DOMAIN } } };
+}
+
 export type AuthConfig = {
   pool: pg.Pool;
   secret: string;
@@ -34,6 +42,7 @@ export function createAuth(cfg: AuthConfig) {
     basePath: "/v1/auth",
     emailAndPassword: { enabled: false },
     trustedOrigins: process.env.NODE_ENV === "production" ? WEB_ORIGINS : [...WEB_ORIGINS, ...LOCAL_ORIGINS],
+    ...cookieOptions(process.env.NODE_ENV),
     socialProviders: cfg.google
       ? { google: { clientId: cfg.google.clientId, clientSecret: cfg.google.clientSecret } }
       : {},
