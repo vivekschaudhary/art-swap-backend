@@ -55,7 +55,9 @@ export function registerHealthRoutes(app: OpenAPIHono<AppEnv>, deps: HealthDeps)
   app.openapi(readyRoute, async (c) => {
     const [database, objectStore] = await Promise.all([deps.pingDatabase(), deps.pingObjectStore()]);
     if (!database || !objectStore) {
-      const res = c.json(buildProblem("DEPENDENCY_UNAVAILABLE", "A dependency is not reachable.", c.get("requestId")), 503);
+      const state = (ok: boolean) => (ok ? "ok" : "unreachable");
+      const detail = `Database: ${state(database)}. Object store: ${state(objectStore)}.`;
+      const res = c.json(buildProblem("DEPENDENCY_UNAVAILABLE", detail, c.get("requestId")), 503);
       res.headers.set("content-type", "application/problem+json");
       return res;
     }
