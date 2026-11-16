@@ -8,6 +8,7 @@ import { COMMON_ERRORS, problemResponse } from "../http/schemas.js";
 import type { AppEnv } from "../http/app.js";
 import { canView, loadItem, loadMedia, toItem, type ItemRow, type MediaRow } from "../catalog/item-view.js";
 import { decodeCursor, encodeCursor } from "../catalog/cursor.js";
+import { decodeFeedCursor, encodeFeedCursor, type FeedRow } from "../catalog/feed-cursor.js";
 
 export type DiscoveryDeps = { db: pg.Pool; auth: Pick<Auth, "api">; publicBucket: string; mediaBaseUrl: string };
 
@@ -102,7 +103,6 @@ const likesRoute = createRoute({
   },
 });
 
-type FeedRow = ItemRow & { dist_m: number; bucket: number };
 type LikeRow = ItemRow & { liked_at: Date };
 
 /** Distance buckets for ordering: under 5 km, 5 to 15 km, then further (design §7.7). */
@@ -236,20 +236,4 @@ export function registerDiscoveryRoutes(app: OpenAPIHono<AppEnv>, deps: Discover
     const next_cursor = rows.length > q.limit && last ? encodeCursor(last.liked_at, last.id) : null;
     return c.json({ data, next_cursor } as never, 200);
   });
-}
-
-/** Feed cursor: distance bucket, publish time and id of the last item on the page. */
-function encodeFeedCursor(row: FeedRow): string {
-  return Buffer.from(JSON.stringify({ b: row.bucket, p: row.published_at?.toISOString() ?? null, id: row.id })).toString("base64url");
-}
-
-function decodeFeedCursor(cursor: string | undefined): { b: number; p: string; id: string } | null {
-  if (!cursor) return null;
-  try {
-    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as { b: number; p: string; id: string };
-    if (typeof parsed.b !== "number" || !parsed.p || !parsed.id) throw new Error("incomplete");
-    return parsed;
-  } catch {
-    throw new DomainError("VALIDATION_FAILED", "The cursor is not valid.");
-  }
 }
