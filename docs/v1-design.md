@@ -498,6 +498,17 @@ Feed query:
 
 The v1 request shape is one-for-one. v2 will add `requested_item_ids[]` / `offered_item_ids[]` without breaking v1 clients.
 
+**Contract details (pinned by evals/scenarios/m5-swaps):**
+- `POST /v1/swaps` returns `201` with `expires_at` 28 days out. Requesting an item you own, or offering someone else's item, returns `422 SWAP_OWN_ITEM`. Shipping returns `422 FULFILLMENT_NOT_SUPPORTED`. An unavailable item returns `409 SWAP_ITEM_UNAVAILABLE`. A second pending swap for the same item by the same requester returns `409 SWAP_DUPLICATE`. A blocked pair returns `403 USER_BLOCKED`.
+- Accept and decline belong to the recipient, and withdraw belongs to the requester. The wrong party gets `403 FORBIDDEN`.
+- Accepting a declined swap returns `409 SWAP_INVALID_TRANSITION`. Accepting an expired swap returns `409 SWAP_EXPIRED`.
+- Two accepts racing for one item: exactly one returns `200`, and the other returns `409` (`SWAP_ITEM_UNAVAILABLE` or `SWAP_INVALID_TRANSITION`).
+- Cancelling needs a reason (`400 VALIDATION_FAILED` without one). Cancelling a completed swap returns `409 SWAP_INVALID_TRANSITION`.
+- Expiry runs through `GET /internal/jobs/cron/swaps-expire`, authorized by `CRON_SECRET`. Without the secret it returns `401`. Test mode also exposes `POST /v1/__test/backdate-swap` (`{swap_id}`, returns `204`), which sets `expires_at` to one second ago.
+- `POST /v1/swaps` honours `Idempotency-Key`. The same key and body replay the original response. Keys are kept for 24 hours (§4).
+- Completion: after both sides confirm, each side receives a clone of the item it received, as a draft with `source = swap_received` and `origin_item_id` set. The originals become `swapped`. Copies of the photos come with the clone.
+- Swap timeline event types, in order: `created`, `accepted`, `received_confirmed` (once per side), `completed`.
+
 ### 7.9 Messaging
 
 | Method | Path                                        | Body / query                                                            | →                                                               |
