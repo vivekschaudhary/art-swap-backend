@@ -4,7 +4,7 @@
  * Contract details these scenarios pin down (also recorded in the design doc):
  * - Feed items carry `distance_km_rounded`: a whole number, at least 1.
  * - Feed requires onboarding. Without a location, it returns 403 ONBOARDING_REQUIRED.
- * - Swiping your own item returns 422 VALIDATION_FAILED.
+ * - Swiping your own item returns 422 SWAP_OWN_ITEM (the catalog code for "your own item").
  * - Undoing a swipe is idempotent: DELETE returns 204 whether or not a swipe existed.
  * - Likes are right-swiped items that are still available. Pending-swap filtering arrives with M5.
  *
@@ -187,10 +187,10 @@ describe("M4 swipes", () => {
     expect(undo.status).toBe(204);
   });
 
-  it("swiping your own item → 422 VALIDATION_FAILED", async () => {
+  it("swiping your own item → 422 SWAP_OWN_ITEM", async () => {
     const own = await createPublishedItem(viewer, "Swipe on my own");
     const res = await send({ method: "POST", path: "/v1/swipes", headers: auth(viewer), body: { item_id: own, direction: "right" } });
-    expectProblem(res, 422, "VALIDATION_FAILED");
+    expectProblem(res, 422, "SWAP_OWN_ITEM");
   });
 
   it("swiping an item that isn't visible → 404 NOT_FOUND", async () => {
