@@ -24,6 +24,7 @@ registerRoutes(app, {
     publicBucket: "",
     mediaBaseUrl: "",
   },
+  discovery: { db: null as never, auth: { api: { getSession: async () => null } } as never, publicBucket: "", mediaBaseUrl: "" },
 });
 registerDocs(app);
 
