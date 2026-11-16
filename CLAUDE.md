@@ -23,7 +23,7 @@ Open items outside the milestones:
 - Notifications are not yet collapsed per conversation (the design's 5-minute rule).
 - Google web client secret is set in production. Confirm sign-in works end to end.
 - Native Google client IDs are set (iOS, Android, web) in production.
-- Cloudflare warning about a partly exposed origin IP. Vercel and Resend records should be DNS-only. Media (R2) stays proxied.
+- Cloudflare origin-IP warning: closed. Vercel and Resend records are DNS-only, and media (R2) stays proxied.
 - The web app is a plain responsive website. "Add to home screen" is optional. The decision is recorded in this file.
 
 ## Stack (decided)
