@@ -66,7 +66,7 @@ The API and the job handlers are Vercel Functions in production. Locally, the sa
 | Object storage   | S3 API                       | Cloudflare R2; adobe/s3mock locally (S3 API, no account)           | `ObjectStore`           |
 | Image processing | n/a                          | `sharp` inside the media job handler (Node runtime)                | `ImageProcessor`        |
 | Jobs / cron      | Vercel Queues + Cron (production); pg-boss (local) | see §8                                                 | `JobQueue`              |
-| Realtime         | SSE + Postgres LISTEN/NOTIFY | built-in                                                           | `EventBus`              |
+| Realtime         | Ably pub/sub (publish from the API, token-scoped subscriptions per user) | Ably free tier to start                                 | `EventBus`              |
 | Push             | FCM HTTP v1, APNs            | direct                                                             | `Notifier`              |
 | Email            | SMTP                         | any relay; Mailpit locally                                         | `Mailer`                |
 | Area labels      | `AreaLabeler` interface | Google Geocoding API (reverse lookup) when `GOOGLE_MAPS_API_KEY` is set; grid label otherwise | `AreaLabeler`           |
@@ -536,6 +536,15 @@ Messaging is open while the swap is `pending`, `accepted` or `disputed`. In othe
 | `notification.created`         | `Notification`                             |
 
 Fan-out: after commit, application code calls `SELECT pg_notify('user_<uuid>', …)`. No triggers are involved. Every API instance `LISTEN`s for the users connected to it.
+
+**Contract details (pinned by evals/scenarios/m6-messaging), and the realtime change:**
+- Live delivery uses Ably, not server-sent events. Server-sent events need a connection that stays open, which Vercel Functions don't provide. The database stays the record of every message. Ably carries only the live event.
+- `GET /v1/events/stream` is removed from the plan. `GET /v1/realtime/token` returns an Ably token request whose capability covers only the caller's own `conversation:<id>` channels and `user:<id>`.
+- Each swap has one conversation, created with the swap, so `Swap.conversation_id` is set from the start.
+- Messages can be sent while a swap is pending, accepted or disputed. Otherwise: `409 CONVERSATION_CLOSED`. A blocked pair gets `403 USER_BLOCKED`.
+- A repeated `client_message_id` returns the original message.
+- Message body: 1 to 4000 characters, otherwise `400 VALIDATION_FAILED`.
+- A new message creates a `message.created` notification for the other participant only.
 
 ### 7.11 Notifications and safety
 
