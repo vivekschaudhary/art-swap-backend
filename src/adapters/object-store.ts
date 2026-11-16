@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   CreateBucketCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -19,6 +20,7 @@ export type ObjectStore = {
   readPrefix(bucket: string, key: string, bytes: number): Promise<Buffer>;
   put(bucket: string, key: string, body: Buffer, contentType: string): Promise<void>;
   deleteKeys(bucket: string, keys: string[]): Promise<void>;
+  copy(bucket: string, sourceKey: string, destKey: string): Promise<void>;
 };
 
 export type ObjectStoreOptions = {
@@ -81,6 +83,10 @@ export function createObjectStore(opts: ObjectStoreOptions): ObjectStore {
 
     async put(bucket, key, body, contentType) {
       await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }));
+    },
+
+    async copy(bucket, sourceKey, destKey) {
+      await client.send(new CopyObjectCommand({ Bucket: bucket, Key: destKey, CopySource: encodeURIComponent(`${bucket}/${sourceKey}`) }));
     },
 
     async deleteKeys(bucket, keys) {

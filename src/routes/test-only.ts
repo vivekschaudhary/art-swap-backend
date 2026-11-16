@@ -1,3 +1,6 @@
+import type pg from "pg";
+import { DomainError } from "../errors/domain-error.js";
+import { backdateSwap } from "../swaps/service.js";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { COMMON_ERRORS } from "../http/schemas.js";
@@ -33,7 +36,25 @@ const boomRoute = createRoute({
   responses: { ...COMMON_ERRORS },
 });
 
-export function registerTestOnlyRoutes(app: OpenAPIHono<AppEnv>) {
+const backdateRoute = createRoute({
+  method: "post",
+  path: "/v1/__test/backdate-swap",
+  operationId: "testBackdateSwap",
+  tags: ["Test"],
+  summary: "Move a swap past its deadline (test mode only)",
+  description: "Sets a swap's expires_at to one second ago so expiry can be tested. Exists only when NODE_ENV=test.",
+  request: { body: { content: { "application/json": { schema: z.object({ swap_id: z.string().uuid() }) } }, required: true } },
+  responses: { 204: { description: "Backdated" }, ...COMMON_ERRORS },
+});
+
+export function registerTestOnlyRoutes(app: OpenAPIHono<AppEnv>, db: pg.Pool) {
+  app.openapi(backdateRoute, async (c) => {
+    const { swap_id } = c.req.valid("json");
+    const found = await backdateSwap(db, swap_id);
+    if (!found) throw new DomainError("NOT_FOUND", "Swap not found.");
+    return c.body(null, 204);
+  });
+
   app.openapi(echoRoute, (c) => {
     const body = c.req.valid("json");
     return c.json({ n: body.n }, 200);

@@ -76,6 +76,14 @@ export function buildApp(rt: JobRuntime) {
       mediaBaseUrl: env.MEDIA_PUBLIC_BASE_URL,
     },
     discovery: { db: pool, auth, publicBucket: env.S3_BUCKET_PUBLIC, mediaBaseUrl: env.MEDIA_PUBLIC_BASE_URL },
+    swaps: {
+      db: pool,
+      auth,
+      store,
+      privateBucket: env.S3_BUCKET_PRIVATE,
+      publicBucket: env.S3_BUCKET_PUBLIC,
+      mediaBaseUrl: env.MEDIA_PUBLIC_BASE_URL,
+    },
   });
   registerInternalJobRoutes(app, { cronSecret: env.CRON_SECRET, handlers: cronHandlers({ db: pool, store, logger, privateBucket: env.S3_BUCKET_PRIVATE, publicBucket: env.S3_BUCKET_PUBLIC }), logger });
   registerDocs(app);

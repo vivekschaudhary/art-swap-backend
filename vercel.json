@@ -18,6 +18,10 @@
     {
       "path": "/internal/jobs/cron/media-gc",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/internal/jobs/cron/swaps-expire",
+      "schedule": "0 * * * *"
     }
   ]
 }
