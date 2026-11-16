@@ -4,6 +4,13 @@ import { passkey } from "@better-auth/passkey";
 import type pg from "pg";
 import type { Mailer } from "../adapters/mailer.js";
 
+/**
+ * Origins allowed to call the auth endpoints from a browser. The web app on kindtree.us reaches the API
+ * through a same-origin rewrite, so its requests arrive with the kindtree.us origin.
+ */
+export const WEB_ORIGINS = ["https://kindtree.us"];
+export const LOCAL_ORIGINS = ["http://localhost:3000"];
+
 export type AuthConfig = {
   pool: pg.Pool;
   secret: string;
@@ -26,6 +33,7 @@ export function createAuth(cfg: AuthConfig) {
     baseURL: cfg.baseUrl,
     basePath: "/v1/auth",
     emailAndPassword: { enabled: false },
+    trustedOrigins: process.env.NODE_ENV === "production" ? WEB_ORIGINS : [...WEB_ORIGINS, ...LOCAL_ORIGINS],
     socialProviders: cfg.google
       ? { google: { clientId: cfg.google.clientId, clientSecret: cfg.google.clientSecret } }
       : {},
