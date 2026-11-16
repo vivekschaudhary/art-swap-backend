@@ -477,7 +477,7 @@ Feed query:
 **Contract details (pinned by evals/scenarios/m4-discovery):**
 - Feed items include `distance_km_rounded`: a whole number, at least 1.
 - Feed requires onboarding (a display name and a location). Without it: `403 ONBOARDING_REQUIRED`.
-- Swiping your own item: `422 VALIDATION_FAILED`. Swiping an item you can't see: `404 NOT_FOUND`.
+- Swiping your own item: `422 SWAP_OWN_ITEM`. Swiping an item you can't see: `404 NOT_FOUND`.
 - `DELETE /v1/swipes/{item_id}` returns `204` whether or not a swipe existed.
 - Likes are right-swiped items that are still `available`. Excluding items with a pending swap arrives with M5.
 
