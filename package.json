@@ -24,6 +24,7 @@
     "@hono/zod-openapi": "^1.6.3",
     "@scalar/hono-api-reference": "^0.12.20",
     "@vercel/queue": "^0.11.0",
+    "ably": "^2.30.0",
     "ajv": "^8.20.0",
     "better-auth": "^1.7.23",
     "drizzle-orm": "^0.45.4",

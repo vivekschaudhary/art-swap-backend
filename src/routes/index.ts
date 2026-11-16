@@ -6,15 +6,17 @@ import { registerTestOnlyRoutes } from "./test-only.js";
 import { registerCatalogRoutes, type CatalogDeps } from "./catalog.js";
 import { registerDiscoveryRoutes, type DiscoveryDeps } from "./discovery.js";
 import { registerSwapRoutes, type SwapDeps } from "./swaps.js";
+import { registerMessagingRoutes, type MessagingDeps } from "./messaging.js";
 
 export function registerRoutes(
   app: OpenAPIHono<AppEnv>,
-  opts: { env: string; health: HealthDeps; identity: IdentityDeps; catalog: CatalogDeps; discovery: DiscoveryDeps; swaps: SwapDeps },
+  opts: { env: string; health: HealthDeps; identity: IdentityDeps; catalog: CatalogDeps; discovery: DiscoveryDeps; swaps: SwapDeps; messaging: MessagingDeps },
 ) {
   registerHealthRoutes(app, opts.health);
   registerIdentityRoutes(app, opts.identity);
   registerCatalogRoutes(app, opts.catalog);
   registerDiscoveryRoutes(app, opts.discovery);
   registerSwapRoutes(app, opts.swaps);
+  registerMessagingRoutes(app, opts.messaging);
   if (opts.env === "test") registerTestOnlyRoutes(app, opts.identity.db);
 }

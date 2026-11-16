@@ -25,6 +25,7 @@ registerRoutes(app, {
     mediaBaseUrl: "",
   },
   discovery: { db: null as never, auth: { api: { getSession: async () => null } } as never, publicBucket: "", mediaBaseUrl: "" },
+  messaging: { db: null as never, auth: { api: { getSession: async () => null } } as never, realtime: { enabled: false, tokenRequest: async () => ({}), publish: async () => {} }, logger: createLogger("silent") },
   swaps: {
     db: null as never,
     auth: { api: { getSession: async () => null } } as never,

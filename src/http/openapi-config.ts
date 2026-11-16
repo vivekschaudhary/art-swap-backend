@@ -16,6 +16,7 @@ export const OPENAPI_DOC = {
     { name: "Media", description: "Photo uploads and processing." },
     { name: "Discovery", description: "The discovery feed, swipes and likes." },
     { name: "Swaps", description: "Swap requests, decisions, completion and history." },
+    { name: "Messaging", description: "Conversations, messages, live delivery and notifications." },
     { name: "Test", description: "Test-only routes, registered only when NODE_ENV=test." },
   ],
 };

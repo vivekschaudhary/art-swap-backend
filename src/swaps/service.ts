@@ -140,6 +140,13 @@ export async function createSwap(
       ],
     );
     await event(c, swapId, viewerId, "created");
+
+    // One conversation per swap, created with it (design §5.6).
+    const convo = await c.query<{ id: string }>("insert into conversations (swap_id) values ($1) returning id", [swapId]);
+    await c.query(
+      "insert into conversation_participants (conversation_id, user_id) values ($1, $2), ($1, $3)",
+      [convo.rows[0]!.id, viewerId, requested.owner_id],
+    );
     return swapId;
   });
 }
@@ -364,6 +371,7 @@ export async function toSwapOutput(ctx: SwapCtx, row: ViewRow, viewerId: string)
     "select from_user_id, to_user_id, snapshot from swap_items where swap_id = $1",
     [row.id],
   );
+  const convo = await ctx.db.query<{ id: string }>("select id from conversations where swap_id = $1", [row.id]);
   const side = (userId: string, name: string | null, role: "requester" | "recipient") => {
     const p = parts.rows.find((x) => x.user_id === userId);
     return {
@@ -394,7 +402,7 @@ export async function toSwapOutput(ctx: SwapCtx, row: ViewRow, viewerId: string)
     requester: side(row.requester_id, row.requester_name, "requester"),
     recipient: side(row.recipient_id, row.recipient_name, "recipient"),
     my_role: viewerId === row.requester_id ? "requester" : "recipient",
-    conversation_id: null,
+    conversation_id: convo.rows[0]?.id ?? null,
     version: row.version,
     created_at: row.created_at.toISOString(),
   };

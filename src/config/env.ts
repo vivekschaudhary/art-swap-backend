@@ -29,6 +29,7 @@ const schema = z.object({
   S3_PUBLIC_ENDPOINT: z.string().url().optional(),
   JOB_BACKEND: z.enum(["vercel", "pgboss"]).default("pgboss"),
   CRON_SECRET: z.string().min(16).optional(),
+  ABLY_API_KEY: z.string().optional(),
   MEDIA_PUBLIC_BASE_URL: z.string().url(),
 });
 

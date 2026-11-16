@@ -6,6 +6,7 @@ import { createLogger, type Logger } from "./logging/logger.js";
 import { createAuth } from "./auth/auth.js";
 import { createMailer } from "./adapters/mailer.js";
 import { createAreaLabeler } from "./adapters/area-labeler.js";
+import { createRealtime } from "./adapters/realtime.js";
 import { googleProviderConfig } from "./auth/google-config.js";
 import { createApp } from "./http/app.js";
 import { registerAuthRoutes } from "./http/auth-routes.js";
@@ -76,6 +77,7 @@ export function buildApp(rt: JobRuntime) {
       mediaBaseUrl: env.MEDIA_PUBLIC_BASE_URL,
     },
     discovery: { db: pool, auth, publicBucket: env.S3_BUCKET_PUBLIC, mediaBaseUrl: env.MEDIA_PUBLIC_BASE_URL },
+    messaging: { db: pool, auth, realtime: createRealtime(env.ABLY_API_KEY), logger },
     swaps: {
       db: pool,
       auth,
