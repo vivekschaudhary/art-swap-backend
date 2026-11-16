@@ -1,12 +1,17 @@
-// Runs pending migrations, then exits. Used by the compose `migrate` service and the release step (§12).
-import { loadEnv } from "../config/env.js";
+// Runs pending migrations, then exits. Reads only DATABASE_URL, so CI and the migrate workflow
+// need just that secret. Used by .github/workflows/migrate.yml and the local compose migrate service.
 import { createPool } from "./client.js";
 import { migrate } from "./migrate.js";
 
-const env = loadEnv();
-const pool = createPool(env.DATABASE_URL);
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  process.stderr.write("DATABASE_URL is not set\n");
+  process.exit(1);
+}
 
-/** Waits for the database to accept connections. A healthy container doesn't guarantee this on first boot. */
+const pool = createPool(databaseUrl);
+
+/** Waits for the database to accept connections, since a fresh database can take a moment. */
 async function waitForDatabase(attempts = 30): Promise<void> {
   for (let i = 1; ; i++) {
     try {
