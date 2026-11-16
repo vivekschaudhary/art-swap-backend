@@ -3,6 +3,7 @@ import type { ObjectStore } from "../adapters/object-store.js";
 import type { Logger } from "../logging/logger.js";
 import { processMedia } from "../catalog/process-media.js";
 import { mediaGc } from "./media-gc.js";
+import { expireDueSwaps } from "../swaps/service.js";
 import type { JobData } from "../adapters/job-queue.js";
 import type { CronJob, Topic } from "./topics.js";
 
@@ -27,5 +28,6 @@ export function queueHandlers(deps: JobDeps): Record<Topic, (data: JobData) => P
 export function cronHandlers(deps: JobDeps): Record<CronJob, () => Promise<Record<string, unknown>>> {
   return {
     "media-gc": () => mediaGc({ db: deps.db, store: deps.store, privateBucket: deps.privateBucket }),
+    "swaps-expire": async () => ({ expired: await expireDueSwaps(deps.db) }),
   };
 }

@@ -6,5 +6,5 @@ export const TOPICS = ["media-process"] as const;
 export type Topic = (typeof TOPICS)[number];
 
 /** Cron jobs, invoked by Vercel Cron through /internal/jobs/cron/<name> (design §8). */
-export const CRON_JOBS = ["media-gc"] as const;
+export const CRON_JOBS = ["media-gc", "swaps-expire"] as const;
 export type CronJob = (typeof CRON_JOBS)[number];

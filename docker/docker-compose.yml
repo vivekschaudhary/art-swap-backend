@@ -16,6 +16,7 @@ x-api-env: &api-env
   S3_PUBLIC_ENDPOINT: http://localhost:9090
   MEDIA_PUBLIC_BASE_URL: http://localhost:9090
   LOG_LEVEL: info
+  CRON_SECRET: local-cron-secret-0123456789
   BETTER_AUTH_SECRET: local-dev-secret-not-for-production-0123456789
   BETTER_AUTH_URL: http://localhost:3000
   PASSKEY_RP_ID: localhost

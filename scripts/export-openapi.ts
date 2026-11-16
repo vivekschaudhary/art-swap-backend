@@ -25,6 +25,14 @@ registerRoutes(app, {
     mediaBaseUrl: "",
   },
   discovery: { db: null as never, auth: { api: { getSession: async () => null } } as never, publicBucket: "", mediaBaseUrl: "" },
+  swaps: {
+    db: null as never,
+    auth: { api: { getSession: async () => null } } as never,
+    store: null as never,
+    privateBucket: "",
+    publicBucket: "",
+    mediaBaseUrl: "",
+  },
 });
 registerDocs(app);
 
