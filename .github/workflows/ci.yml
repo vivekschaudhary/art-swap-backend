@@ -75,6 +75,7 @@ jobs:
     needs: [api, evals-static]
     env:
       COMPOSE_FILE: docker/docker-compose.yml
+      EVALS_ABLY_KEY: ${{ secrets.EVALS_ABLY_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Start stack
