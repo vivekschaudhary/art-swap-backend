@@ -5,6 +5,7 @@
     "m2-identity",
     "m3-catalog",
     "m4-discovery",
-    "m5-swaps"
+    "m5-swaps",
+    "m6-messaging"
   ]
 }
