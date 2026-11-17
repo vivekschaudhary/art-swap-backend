@@ -26,8 +26,9 @@ export type StoredVariant = { key: string; w: number; h: number };
 export type StoredVariants = Partial<Record<"thumb" | "card" | "full", StoredVariant>>;
 
 /** Public URLs for a ready item's variants. Pending or failed media expose no URLs. */
-export function mediaUrls(baseUrl: string, publicBucket: string, variants: StoredVariants | null) {
+/** The media domain serves the public bucket at its root, so the bucket name is not part of the path. */
+export function mediaUrls(baseUrl: string, variants: StoredVariants | null) {
   if (!variants || !variants.thumb || !variants.card || !variants.full) return {};
-  const url = (v: StoredVariant) => `${baseUrl.replace(/\/$/, "")}/${publicBucket}/${v.key}`;
+  const url = (v: StoredVariant) => `${baseUrl.replace(/\/$/, "")}/${v.key}`;
   return { thumb: url(variants.thumb), card: url(variants.card), full: url(variants.full) };
 }

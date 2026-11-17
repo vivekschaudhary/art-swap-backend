@@ -120,7 +120,7 @@ async function viewerRadius(db: pg.Pool, userId: string): Promise<{ radiusKm: nu
 }
 
 function feedOutput(item: ItemRow, media: MediaRow[], deps: DiscoveryDeps, distanceMeters: number) {
-  return { ...toItem(item, media, { viewerIsOwner: false, publicBucket: deps.publicBucket, mediaBaseUrl: deps.mediaBaseUrl }), distance_km_rounded: roundedKm(distanceMeters) };
+  return { ...toItem(item, media, { viewerIsOwner: false, mediaBaseUrl: deps.mediaBaseUrl }), distance_km_rounded: roundedKm(distanceMeters) };
 }
 
 export function registerDiscoveryRoutes(app: OpenAPIHono<AppEnv>, deps: DiscoveryDeps) {
@@ -231,7 +231,7 @@ export function registerDiscoveryRoutes(app: OpenAPIHono<AppEnv>, deps: Discover
     );
     const page = rows.slice(0, q.limit);
     const data = [];
-    for (const row of page) data.push(toItem(row, await loadMedia(db, row.id), { viewerIsOwner: false, publicBucket: deps.publicBucket, mediaBaseUrl: deps.mediaBaseUrl }));
+    for (const row of page) data.push(toItem(row, await loadMedia(db, row.id), { viewerIsOwner: false, mediaBaseUrl: deps.mediaBaseUrl }));
     const last = page[page.length - 1];
     const next_cursor = rows.length > q.limit && last ? encodeCursor(last.liked_at, last.id) : null;
     return c.json({ data, next_cursor } as never, 200);
