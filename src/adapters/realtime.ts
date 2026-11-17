@@ -1,4 +1,4 @@
-import Ably from "ably";
+import { createHttpClient } from "@ably/pubsub-server";
 
 /**
  * Live delivery (design §7.10). Ably carries live events only. The database stays the record of every
@@ -20,7 +20,8 @@ export function createRealtime(apiKey: string | undefined): Realtime {
       async publish() {},
     };
   }
-  const rest = new Ably.Rest({ key: apiKey });
+  // The server package is the one for code we run. Current Ably accounts refuse publishes from the older SDK.
+  const rest = createHttpClient({ key: apiKey });
   return {
     enabled: true,
     async tokenRequest(clientId, capability) {
