@@ -228,6 +228,32 @@ const completeUploads = createRoute({
   },
 });
 
+const deleteMedia = createRoute({
+  method: "delete",
+  path: "/v1/items/{id}/media/{media_id}",
+  operationId: "deleteItemMedia",
+  tags: ["Media"],
+  summary: "Delete a photo",
+  description: "Removes one photo and its files. The remaining photos keep their order. Not allowed while the item is reserved, swapped or archived.",
+  request: { params: z.object({ id: z.string().uuid(), media_id: z.string().uuid() }) },
+  responses: { 204: { description: "Deleted" }, ...AUTH, ...COMMON_ERRORS },
+});
+
+const reorderMedia = createRoute({
+  method: "patch",
+  path: "/v1/items/{id}/media/order",
+  operationId: "reorderItemMedia",
+  tags: ["Media"],
+  summary: "Set the photo order",
+  description: "Send every photo id for the item, in the new order. The list must match the item's photos exactly.",
+  request: { params: idParam, body: { required: true, content: { "application/json": { schema: z.object({ media_ids: z.array(z.string().uuid()).min(1) }) } } } },
+  responses: {
+    200: { description: "Photos in the new order", content: { "application/json": { schema: z.array(z.object({}).passthrough()) } } },
+    ...AUTH,
+    ...COMMON_ERRORS,
+  },
+});
+
 const provenance = createRoute({
   method: "get",
   path: "/v1/items/{id}/provenance",
@@ -600,6 +626,59 @@ export function registerCatalogRoutes(app: OpenAPIHono<AppEnv>, deps: CatalogDep
       out.push({ id: row.id, status: "processing" });
     }
     return c.json({ media: out } as never, 202);
+  });
+
+  app.openapi(deleteMedia, async (c) => {
+    const user = await requireUser(auth, c);
+    const { id, media_id } = c.req.valid("param");
+    const item = await ownedItem(db, id, user.id);
+    if (LOCKED_STATUSES.includes(item.status)) throw new DomainError("ITEM_LOCKED", "This item's photos can't be changed right now.");
+
+    const found = await db.query<{ id: string; original_key: string; variants: Record<string, { key: string }> | null }>(
+      "select id, original_key, variants from item_media where id = $1 and item_id = $2",
+      [media_id, id],
+    );
+    const row = found.rows[0];
+    if (!row) throw new DomainError("NOT_FOUND", "Photo not found.");
+
+    await store.deleteKeys(deps.privateBucket, [row.original_key]);
+    await store.deleteKeys(deps.publicBucket, Object.values(row.variants ?? {}).map((v) => v.key));
+    await db.query("delete from item_media where id = $1", [media_id]);
+    // Close the gap so positions stay 0, 1, 2 ... in order.
+    await db.query(
+      `update item_media m set position = s.rn - 1
+         from (select id, row_number() over (order by position, id) as rn from item_media where item_id = $1) s
+        where m.id = s.id`,
+      [id],
+    );
+    return c.body(null, 204);
+  });
+
+  app.openapi(reorderMedia, async (c) => {
+    const user = await requireUser(auth, c);
+    const { id } = c.req.valid("param");
+    const { media_ids } = c.req.valid("json");
+    const item = await ownedItem(db, id, user.id);
+    if (LOCKED_STATUSES.includes(item.status)) throw new DomainError("ITEM_LOCKED", "This item's photos can't be changed right now.");
+
+    const current = await loadMedia(db, id);
+    const have = new Set(current.map((m) => m.id));
+    const wanted = new Set(media_ids);
+    const exact = media_ids.length === wanted.size && wanted.size === have.size && [...wanted].every((x) => have.has(x));
+    if (!exact) {
+      throw new DomainError("VALIDATION_FAILED", "The order must list every photo of this item once.", [
+        { field: "media_ids", message: "must match the item's photos exactly" },
+      ]);
+    }
+
+    await db.query(
+      `update item_media m set position = o.ord - 1
+         from unnest($2::uuid[]) with ordinality as o(id, ord)
+        where m.id = o.id and m.item_id = $1`,
+      [id, media_ids],
+    );
+    const view = await viewOf(deps, item, user.id);
+    return c.json(view.media as never, 200);
   });
 
   app.openapi(provenance, async (c) => {
