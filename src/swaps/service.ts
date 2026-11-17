@@ -383,7 +383,7 @@ export async function toSwapOutput(ctx: SwapCtx, row: ViewRow, viewerId: string)
           title: i.snapshot.title,
           category: i.snapshot.category,
           condition: i.snapshot.condition,
-          cover: { urls: mediaUrls(ctx.mediaBaseUrl, ctx.publicBucket, i.snapshot.cover_variants) },
+          cover: { urls: mediaUrls(ctx.mediaBaseUrl, i.snapshot.cover_variants) },
         })),
       confirmed_received_at: p?.confirmed_received_at?.toISOString() ?? null,
       role,

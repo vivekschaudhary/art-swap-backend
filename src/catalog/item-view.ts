@@ -76,7 +76,7 @@ export type ItemOutput = ReturnType<typeof toItem>;
 export function toItem(
   item: ItemRow,
   media: MediaRow[],
-  opts: { viewerIsOwner: boolean; publicBucket: string; mediaBaseUrl: string },
+  opts: { viewerIsOwner: boolean; mediaBaseUrl: string },
 ) {
   const shown = opts.viewerIsOwner ? media : media.filter((m) => m.status === "ready");
   const mediaOut = shown.map((m) => ({
@@ -86,7 +86,7 @@ export function toItem(
     width: m.width,
     height: m.height,
     blurhash: null,
-    urls: mediaUrls(opts.mediaBaseUrl, opts.publicBucket, m.variants),
+    urls: mediaUrls(opts.mediaBaseUrl, m.variants),
     ...(m.status === "ready" && m.variants
       ? {
           variants: {

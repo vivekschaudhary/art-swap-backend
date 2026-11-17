@@ -14,7 +14,7 @@ x-api-env: &api-env
   S3_BUCKET_PUBLIC: kindtree-media
   S3_BUCKET_PRIVATE: kindtree-private
   S3_PUBLIC_ENDPOINT: http://localhost:9090
-  MEDIA_PUBLIC_BASE_URL: http://localhost:9090
+  MEDIA_PUBLIC_BASE_URL: http://localhost:9090/kindtree-media
   LOG_LEVEL: info
   CRON_SECRET: local-cron-secret-0123456789
   ABLY_API_KEY: ${ABLY_API_KEY:-}

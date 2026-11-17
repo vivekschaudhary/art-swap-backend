@@ -268,7 +268,6 @@ async function viewOf(deps: CatalogDeps, item: ItemRow, viewerId: string) {
   const media = await loadMedia(deps.db, item.id);
   return toItem(item, media, {
     viewerIsOwner: item.owner_id === viewerId,
-    publicBucket: deps.publicBucket,
     mediaBaseUrl: deps.mediaBaseUrl,
   });
 }
