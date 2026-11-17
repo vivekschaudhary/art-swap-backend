@@ -13,6 +13,9 @@ import { TOPICS, type Topic } from "../jobs/topics.js";
 export type JobData = Record<string, unknown>;
 export type JobHandler = (data: JobData) => Promise<void>;
 
+/** Region of the consumer functions. Keep in step with "regions" in vercel.json. */
+const JOB_REGION = "iad1";
+
 export type SendOptions = { singletonKey?: string; delaySeconds?: number };
 
 export type JobQueue = {
@@ -33,7 +36,10 @@ export function createVercelJobQueue(): JobQueue {
   const handlers = new Map<Topic, JobHandler>();
   return {
     async send(topic, data, opts) {
+      // Queues are regional. Send to the region the consumer functions run in (vercel.json), or messages
+      // sent from another region never reach the consumer.
       await vercelSend(topic, data, {
+        region: JOB_REGION,
         idempotencyKey: opts?.singletonKey,
         delaySeconds: opts?.delaySeconds,
         retentionSeconds: 60 * 60 * 24,
