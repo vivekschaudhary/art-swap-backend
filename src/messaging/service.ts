@@ -93,7 +93,7 @@ export async function sendMessage(ctx: MessagingCtx, viewerId: string, conversat
     try {
       await ctx.realtime.publish(`conversation:${conversationId}`, "message.created", messageOut(message.row));
     } catch (err) {
-      ctx.logger.warn({ conversation_id: conversationId, err: { name: (err as Error).name } }, "live publish failed");
+      ctx.logger.warn({ conversation_id: conversationId, err: { name: (err as Error).name, message: (err as Error).message } }, "live publish failed");
     }
   }
   return messageOut(message.row);
