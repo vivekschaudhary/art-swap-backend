@@ -469,7 +469,7 @@ Upload flow: request upload URLs → client sends `PUT` to R2 → `complete` →
 Feed query:
 
 - **Includes:** items that are `available` and within `ST_DWithin(location, me, radius)`, filtered by category.
-- **Excludes:** the user's own items, items they've already swiped, and items from users blocked in either direction.
+- **Excludes:** the user's own items and items from users blocked in either direction. Items the user has swiped on stay in the feed, so they show every time.
 - **Ordering:** by distance bucket (0–5, 5–15, 15+ km), then `published_at DESC`.
 - **Cursor:** encodes `(bucket, published_at, id)`.
 - **Privacy:** distance is rounded to whole km, with a minimum of 1.
