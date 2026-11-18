@@ -159,7 +159,6 @@ export function registerDiscoveryRoutes(app: OpenAPIHono<AppEnv>, deps: Discover
                  and i.location is not null
                  and ST_DWithin(i.location, v.location, $2)
                  and ($3::uuid[] is null or i.category_id = any($3::uuid[]))
-                 and not exists (select 1 from swipes s where s.user_id = $1 and s.item_id = i.id)
                  and not exists (
                    select 1 from blocks b
                     where (b.blocker_id = $1 and b.blocked_id = i.owner_id)
