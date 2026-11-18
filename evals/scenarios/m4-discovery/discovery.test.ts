@@ -6,6 +6,7 @@
  * - Feed requires onboarding. Without a location, it returns 403 ONBOARDING_REQUIRED.
  * - Swiping your own item returns 422 SWAP_OWN_ITEM (the catalog code for "your own item").
  * - Undoing a swipe is idempotent: DELETE returns 204 whether or not a swipe existed.
+ * - Swiped items stay in the feed, so they show every time the feed is opened.
  * - Likes are right-swiped items that are still available. Pending-swap filtering arrives with M5.
  *
  * Each run uses its own map area so results from earlier runs can't affect its assertions.
@@ -162,7 +163,7 @@ describe("M4 swipes", () => {
     expect(res.json).toEqual({ next_action: "compose_swap" });
   });
 
-  it("a left swipe removes the item from the feed and returns next_action none", async () => {
+  it("a left swipe returns next_action none, and the item stays in the feed", async () => {
     const res = await send({
       method: "POST",
       path: "/v1/swipes",
@@ -172,7 +173,7 @@ describe("M4 swipes", () => {
     expect(res.status, res.text).toBe(200);
     expect(res.json).toEqual({ next_action: "none" });
     const feed = await feedFor(viewer);
-    expect(feed.data.map((i) => i.id)).not.toContain(nearItem);
+    expect(feed.data.map((i) => i.id)).toContain(nearItem);
   });
 
   it("undoing a left swipe brings the item back", async () => {
