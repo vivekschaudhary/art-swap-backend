@@ -1,6 +1,6 @@
 /**
  * Dev-only: adds listed items for one account, so the discover screens have something to show.
- * Each item reuses an existing photo, so the cards show real images. Not used by the app or by CI.
+ * Each item reuses an existing photo, cycling through the ones already uploaded, so the cards look different. Not used by the app or by CI.
  *
  * Usage (set DATABASE_URL in your shell first, from a hidden prompt, never in a file or in chat):
  *   npx tsx scripts/seed-items.ts <user-id> [count]
@@ -33,12 +33,13 @@ async function main() {
     const cat = await client.query<{ id: string }>("select id from categories where slug = 'art'");
     if (cat.rowCount === 0) throw new Error("No 'art' category found.");
 
-    // A photo to reuse: any ready image from an item that already has one.
-    const photo = await client.query<{ original_key: string; mime: string; bytes: number; width: number | null; height: number | null; variants: unknown }>(
-      "select original_key, mime, bytes, width, height, variants from item_media where status = 'ready' and variants is not null order by created_at limit 1",
+    // Photos to reuse: ready images from items that already have them. Each new item takes the next one,
+    // so the cards look different. With fewer photos than items, the list repeats.
+    const photos = await client.query<{ original_key: string; mime: string; bytes: number; width: number | null; height: number | null; variants: unknown }>(
+      "select original_key, mime, bytes, width, height, variants from item_media where status = 'ready' and variants is not null order by created_at desc limit 50",
     );
-    if (photo.rowCount === 0) throw new Error("No ready photo exists to reuse. Upload one through the app first.");
-    const src = photo.rows[0]!;
+    if (photos.rowCount === 0) throw new Error("No ready photo exists to reuse. Upload one through the app first.");
+    const sources = photos.rows;
 
     await client.query("begin");
     const ids: string[] = [];
@@ -51,6 +52,7 @@ async function main() {
         [userId, cat.rows[0]!.id, `Seed art ${n}`, `Sample listing ${n} for trying the screens.`, CONDITIONS[(n - 1) % CONDITIONS.length]],
       );
       const id = item.rows[0]!.id;
+      const src = sources[(n - 1) % sources.length]!;
       await client.query(
         `insert into item_media (item_id, status, original_key, variants, mime, bytes, width, height, position)
          values ($1, 'ready', $2, $3::jsonb, $4, $5, $6, $7, 0)`,
